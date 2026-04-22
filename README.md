@@ -1,6 +1,6 @@
 # Fair and Efficient Task Allocation and Path Planning for Multi-Agent Systems in Disaster Response Using Linear Programming
 
-Back in the summer of 2024, I had the opportunity to participate in an NSF REU (Research Experience for Undergraduates) at the University of Texas at Austin, where I got to work alongside the Texas Advanced Computing Center (TACC) and Dr. Adam Thorpe on this project. It was honestly one of the coolest experiences I've had a chance to do my first ever real research as an undergrad and actually see it through to a paper and poster presentation.
+Back in the summer of 2024, I had the opportunity to participate in an NSF REU (Research Experience for Undergraduates) at the University of Texas at Austin, where I got to work alongside the Texas Advanced Computing Center (TACC) and Dr. Adam Thorpe on this project. It was honestly one of the coolest experiences I've had — getting to do real research as an undergrad and actually see it through to a paper and poster presentation.
 
 ---
 
@@ -25,9 +25,11 @@ Where $e_t^i$ is an agent's performance relative to the average $\bar{e}_t$ — 
 
 I built an interactive simulation that lets you watch the robots collaborate in real time — different robot roles (Scout, Medic, Engineer, Carrier, FireBot), different mission types, live fairness metrics, and the ability to switch between algorithms on the fly.
 
-👉 **[Launch the live simulation here](https://jackpham.github.io/area-disaster-response/simulation.html)**
+👉 **[Launch the live simulation here](https://YOUR-USERNAME.github.io/area-disaster-response/simulation.html)**
 
-Or clone the repo and open `simulation.html` directly in your browser — no setup needed.
+👉 **[View research data visualizations](https://YOUR-USERNAME.github.io/area-disaster-response/visualizations.html)**
+
+Or clone the repo and open either HTML file directly in your browser — no setup needed.
 
 ---
 
@@ -52,6 +54,7 @@ This work was supported by the NSF REU Site: CI Research for Social Change, Awar
 | File | Description |
 |---|---|
 | `simulation.html` | Interactive multi-agent simulation (open in browser) |
+| `visualizations.html` | Research data visualizations — all 5 figures with charts |
 | `disaster_response_sim.py` | Core simulation engine (Python) |
 | `disaster_response.ipynb` | Research notebook with theory, figures, and experiments |
 | `paper/` | Original REU paper (PDF) |
