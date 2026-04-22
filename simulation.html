@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ARIA — Adaptive Robotic Intelligence for Autonomous Disaster Response</title>
+<title>Robotic Algorithm for Autonomous Disaster Response</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -290,7 +290,7 @@
     <div id="canvas-wrap">
       <canvas id="sim-canvas"></canvas>
       <div id="overlay">
-        <h2>ARIA SYSTEM READY</h2>
+        <h2>SIMULATION SYSTEM READY</h2>
         <p>Press PLAY to begin disaster response simulation</p>
       </div>
     </div>
@@ -363,7 +363,7 @@
 
 <script>
 /* ============================================================
-   ARIA SIMULATION ENGINE
+   SIMULATION ENGINE
    Fair + Efficient Multi-Agent Disaster Response
    Pham · Thorpe · Topcu  |  NSF REU #2150390
    ============================================================ */
@@ -1247,7 +1247,7 @@ function resetSim(){
   pauseSim();
   buildWorld(episode*100+42);
   document.getElementById('overlay').style.display='flex';
-  document.getElementById('overlay').innerHTML=`<h2>ARIA SYSTEM READY</h2><p>Press PLAY to begin disaster response simulation</p>`;
+  document.getElementById('overlay').innerHTML=`<h2>SIMULATION SYSTEM READY</h2><p>Press PLAY to begin disaster response simulation</p>`;
   document.getElementById('event-log').innerHTML='';
   render();
 }
@@ -1354,7 +1354,7 @@ buildWorld(142);
 render();
 animLoop();
 
-console.log('%cARIA Simulation Loaded','color:#00e5ff;font-family:monospace;font-size:14px');
+console.log('% Simulation Loaded','color:#00e5ff;font-family:monospace;font-size:14px');
 console.log('%cShortcuts: SPACE=play/pause | →=step | R=reset | N=new episode','color:#4a5a70;font-family:monospace;font-size:10px');
 </script>
 </body>
