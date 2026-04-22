@@ -23,11 +23,13 @@ Where $e_t^i$ is an agent's performance relative to the average $\bar{e}_t$ — 
 
 ## Try the simulator
 
-I built an interactive simulation that lets you watch the robots collaborate in real time — different robot roles (Scout, Medic, Engineer, Carrier, FireBot), different mission types, live fairness metrics, and the ability to switch between algorithms on the fly.
+I built an interactive simulation that lets you watch the robots collaborate in real time with different robot roles (Scout, Medic, Engineer, Carrier, FireBot), different mission types, live fairness metrics, and the ability to switch between algorithms on the fly.
 
- **[Launch the live simulation here](https://YOUR-USERNAME.github.io/area-disaster-response/simulation.html)**
+ **[Launch the live simulation here](https://jackpham-rgb.github.io/area-disaster-response/simulation.html)**
 
- **[View research data visualizations](https://YOUR-USERNAME.github.io/area-disaster-response/visualizations.html)**
+ **[Launch the live simulation v2 here](https://jackpham-rgb.github.io/area-disaster-response/simulation_v2.html)**
+
+ **[View research data visualizations](https://jackpham-rgb.github.io/area-disaster-response/visualizations.html)**
 
 Or clone the repo and open either HTML file directly in your browser, no setup needed.
 
@@ -54,7 +56,8 @@ This work was supported by the NSF REU Site: CI Research for Social Change, Awar
 | File | Description |
 |---|---|
 | `simulation.html` | Interactive multi-agent simulation (open in browser) |
+| `simulation_v2.html` | Interactive multi-agent simulation (2nd version) |
 | `visualizations.html` | Research data visualizations — all 5 figures with charts |
 | `disaster_response_sim.py` | Core simulation engine (Python) |
 | `disaster_response.ipynb` | Research notebook with theory, figures, and experiments |
-| `paper/` | Original REU paper (PDF) |
+| `REU paper.pdf` | Original REU paper (PDF) |
