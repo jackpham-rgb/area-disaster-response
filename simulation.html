@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARIA — Adaptive Robotic Intelligence for Autonomous Disaster Response</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --panel: #0f1318;
+    --border: #1e2530;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #39ff14;
+    --warn: #ffcc00;
+    --red: #ff3b5c;
+    --text: #c8d6e5;
+    --muted: #4a5a70;
+    --white: #f0f4f8;
+    --font-mono: 'Space Mono', monospace;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font-body); overflow:hidden; }
+
+  /* ── SCANLINE OVERLAY ── */
+  body::before {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:1000;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+  }
+
+  /* ── LAYOUT ── */
+  #app { display:grid; grid-template-rows:56px 1fr; height:100vh; }
+  #main { display:grid; grid-template-columns:240px 1fr 280px; gap:0; overflow:hidden; }
+
+  /* ── HEADER ── */
+  header {
+    background:var(--panel); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:16px; padding:0 20px;
+    position:relative; overflow:hidden;
+  }
+  header::after {
+    content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+    animation: scanH 3s linear infinite;
+  }
+  @keyframes scanH { from{transform:translateX(-100%)} to{transform:translateX(100%)} }
+
+  .logo { font-family:var(--font-head); font-size:20px; font-weight:800; letter-spacing:-0.5px; }
+  .logo span { color:var(--accent); }
+  .badge {
+    font-family:var(--font-mono); font-size:9px; padding:3px 8px;
+    border:1px solid var(--accent); color:var(--accent); border-radius:2px;
+    animation: blink 2s step-end infinite;
+  }
+  @keyframes blink { 50%{opacity:0.3} }
+  .header-stats { margin-left:auto; display:flex; gap:20px; align-items:center; }
+  .hstat { font-family:var(--font-mono); font-size:10px; color:var(--muted); }
+  .hstat span { color:var(--accent3); font-size:13px; }
+
+  /* ── SIDE PANEL LEFT ── */
+  #left-panel {
+    background:var(--panel); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .panel-title {
+    font-family:var(--font-mono); font-size:9px; letter-spacing:3px; color:var(--muted);
+    padding:12px 16px 8px; text-transform:uppercase; border-bottom:1px solid var(--border);
+  }
+
+  /* Robot roster */
+  #roster { flex:1; overflow-y:auto; padding:8px; }
+  #roster::-webkit-scrollbar { width:2px; }
+  #roster::-webkit-scrollbar-track { background:var(--panel); }
+  #roster::-webkit-scrollbar-thumb { background:var(--muted); }
+
+  .robot-card {
+    border:1px solid var(--border); border-radius:4px; padding:10px;
+    margin-bottom:6px; cursor:pointer; transition:all 0.2s;
+    position:relative; overflow:hidden;
+  }
+  .robot-card::before {
+    content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+  }
+  .robot-card:hover { border-color:var(--muted); background:rgba(255,255,255,0.02); }
+  .robot-card.active { background:rgba(0,229,255,0.04); border-color:rgba(0,229,255,0.3); }
+  .robot-card.selected { border-color:var(--accent) !important; }
+
+  .rc-top { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .rc-icon { font-size:18px; }
+  .rc-name { font-family:var(--font-head); font-size:12px; font-weight:700; }
+  .rc-role { font-family:var(--font-mono); font-size:8px; color:var(--muted); margin-top:1px; }
+  .rc-status {
+    margin-left:auto; font-family:var(--font-mono); font-size:8px;
+    padding:2px 6px; border-radius:2px;
+  }
+  .status-idle    { background:rgba(74,90,112,0.3); color:var(--muted); }
+  .status-moving  { background:rgba(0,229,255,0.15); color:var(--accent); }
+  .status-working { background:rgba(255,107,53,0.15); color:var(--accent2); }
+  .status-done    { background:rgba(57,255,20,0.15); color:var(--accent3); }
+  .status-waiting { background:rgba(255,204,0,0.15); color:var(--warn); }
+
+  .rc-bar-wrap { height:3px; background:var(--border); border-radius:2px; margin:4px 0; }
+  .rc-bar { height:3px; border-radius:2px; transition:width 0.5s; }
+
+  .rc-task { font-family:var(--font-mono); font-size:8px; color:var(--muted); }
+  .rc-stats { display:flex; gap:10px; margin-top:4px; }
+  .rc-stat { font-family:var(--font-mono); font-size:8px; }
+  .rc-stat span { color:var(--white); }
+
+  /* Algorithm selector */
+  #algo-section { padding:10px; border-top:1px solid var(--border); }
+  .algo-title { font-family:var(--font-mono); font-size:8px; letter-spacing:2px; color:var(--muted); margin-bottom:6px; }
+  .algo-btn {
+    width:100%; text-align:left; background:none; border:1px solid var(--border);
+    color:var(--muted); font-family:var(--font-mono); font-size:9px;
+    padding:6px 10px; border-radius:2px; cursor:pointer; margin-bottom:4px;
+    transition:all 0.2s; display:flex; justify-content:space-between;
+  }
+  .algo-btn:hover { border-color:var(--muted); color:var(--text); }
+  .algo-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(0,229,255,0.06); }
+
+  /* ── MAIN CANVAS AREA ── */
+  #center { display:flex; flex-direction:column; }
+  #canvas-wrap {
+    flex:1; position:relative; overflow:hidden;
+    background: radial-gradient(ellipse at 50% 50%, #0d1520 0%, var(--bg) 70%);
+  }
+  #sim-canvas { position:absolute; inset:0; }
+
+  /* ── CONTROLS BAR ── */
+  #controls {
+    background:var(--panel); border-top:1px solid var(--border);
+    padding:10px 20px; display:flex; align-items:center; gap:12px;
+  }
+  .ctrl-btn {
+    background:var(--border); border:1px solid var(--muted); color:var(--text);
+    font-family:var(--font-mono); font-size:10px; padding:7px 14px;
+    border-radius:2px; cursor:pointer; transition:all 0.15s;
+    display:flex; align-items:center; gap:6px;
+  }
+  .ctrl-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .ctrl-btn.primary { background:rgba(0,229,255,0.1); border-color:var(--accent); color:var(--accent); }
+  .ctrl-btn.danger  { background:rgba(255,59,92,0.1);  border-color:var(--red);   color:var(--red); }
+
+  .speed-wrap { display:flex; align-items:center; gap:8px; margin-left:auto; }
+  .speed-label { font-family:var(--font-mono); font-size:9px; color:var(--muted); }
+  input[type=range] {
+    -webkit-appearance:none; height:2px; background:var(--border); border-radius:2px; cursor:pointer;
+    outline:none; width:80px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance:none; width:10px; height:10px; background:var(--accent);
+    border-radius:50%;
+  }
+
+  /* Episode progress */
+  .ep-wrap { display:flex; align-items:center; gap:8px; }
+  .ep-label { font-family:var(--font-mono); font-size:9px; color:var(--muted); }
+  .ep-val   { font-family:var(--font-mono); font-size:11px; color:var(--white); }
+  .ep-bar   { width:80px; height:4px; background:var(--border); border-radius:2px; position:relative; }
+  .ep-fill  { height:4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius:2px; transition:width 0.3s; }
+
+  /* ── RIGHT PANEL ── */
+  #right-panel {
+    background:var(--panel); border-left:1px solid var(--border);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  /* Mini charts */
+  .chart-section { padding:12px; border-bottom:1px solid var(--border); }
+  .chart-label { font-family:var(--font-mono); font-size:9px; letter-spacing:2px; color:var(--muted); margin-bottom:8px; }
+  canvas.mini-chart { width:100%; height:80px; display:block; }
+
+  /* Metrics grid */
+  #metrics-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:1px;
+    background:var(--border); border-top:1px solid var(--border);
+  }
+  .metric-cell {
+    background:var(--panel); padding:10px 12px;
+  }
+  .mc-label { font-family:var(--font-mono); font-size:8px; color:var(--muted); margin-bottom:4px; }
+  .mc-val   { font-family:var(--font-head); font-size:20px; font-weight:700; line-height:1; }
+  .mc-sub   { font-family:var(--font-mono); font-size:8px; color:var(--muted); margin-top:2px; }
+
+  /* Event log */
+  #event-log { flex:1; overflow-y:auto; padding:8px; }
+  #event-log::-webkit-scrollbar { width:2px; }
+  #event-log::-webkit-scrollbar-thumb { background:var(--muted); }
+  .log-entry {
+    font-family:var(--font-mono); font-size:9px; padding:4px 8px;
+    border-left:2px solid var(--border); margin-bottom:3px; line-height:1.5;
+    opacity:0; animation:fadeIn 0.3s forwards;
+  }
+  @keyframes fadeIn { to{opacity:1} }
+  .log-time { color:var(--muted); }
+  .log-info   { border-color:var(--accent); }
+  .log-action { border-color:var(--accent2); }
+  .log-done   { border-color:var(--accent3); }
+  .log-warn   { border-color:var(--warn); }
+  .log-collab { border-color:#c084fc; }
+
+  /* Episode history sparkline area */
+  #ep-history { padding:10px; border-top:1px solid var(--border); }
+  .ep-hist-title { font-family:var(--font-mono); font-size:9px; color:var(--muted); letter-spacing:2px; margin-bottom:6px; }
+  #ep-hist-canvas { width:100%; height:60px; display:block; }
+
+  /* Tooltip */
+  #tooltip {
+    position:fixed; pointer-events:none; z-index:500;
+    background:rgba(15,19,24,0.95); border:1px solid var(--border);
+    padding:8px 12px; font-family:var(--font-mono); font-size:9px;
+    line-height:1.8; border-radius:2px; display:none;
+    box-shadow:0 4px 24px rgba(0,0,0,0.5);
+  }
+
+  /* Mission role legend */
+  #role-legend {
+    padding:8px; display:flex; flex-wrap:wrap; gap:4px;
+    border-bottom:1px solid var(--border);
+  }
+  .role-pill {
+    font-family:var(--font-mono); font-size:8px; padding:2px 7px;
+    border-radius:10px; border:1px solid;
+  }
+
+  /* Collaboration pulse */
+  @keyframes collabPulse {
+    0%{opacity:0.3;transform:scale(1)}
+    50%{opacity:1;transform:scale(1.1)}
+    100%{opacity:0.3;transform:scale(1)}
+  }
+
+  /* Glow text */
+  .glow-cyan  { color:var(--accent);  text-shadow:0 0 10px var(--accent); }
+  .glow-orange{ color:var(--accent2); text-shadow:0 0 10px var(--accent2); }
+  .glow-green { color:var(--accent3); text-shadow:0 0 10px var(--accent3); }
+  .glow-warn  { color:var(--warn);    text-shadow:0 0 10px var(--warn); }
+  .glow-red   { color:var(--red);     text-shadow:0 0 10px var(--red); }
+
+  /* Overlay message */
+  #overlay {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; z-index:10;
+    background:rgba(10,12,15,0.85); backdrop-filter:blur(4px);
+  }
+  #overlay h2 { font-family:var(--font-head); font-size:28px; font-weight:800; color:var(--accent); margin-bottom:8px; }
+  #overlay p  { font-family:var(--font-mono); font-size:11px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- HEADER -->
+<header>
+  <div class="logo">A<span>R</span>IA</div>
+  <div style="font-family:var(--font-body);font-size:11px;color:var(--muted)">Adaptive Robotic Intelligence for Autonomous Disaster Response</div>
+  <div class="badge">LIVE SIM</div>
+  <div class="header-stats">
+    <div class="hstat">EPISODE <span id="hdr-ep">0</span></div>
+    <div class="hstat">STEP <span id="hdr-step">0</span></div>
+    <div class="hstat">TASKS <span id="hdr-tasks">0/0</span></div>
+    <div class="hstat">FAIRNESS <span id="hdr-fair">—</span></div>
+    <div class="hstat" style="color:var(--muted);font-size:9px">NSF REU #2150390 · Pham · Thorpe · Topcu</div>
+  </div>
+</header>
+
+<div id="main">
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+    <div class="panel-title">// ROBOT ROSTER</div>
+    <div id="role-legend"></div>
+    <div id="roster"></div>
+    <div id="algo-section">
+      <div class="algo-title">// ALGORITHM</div>
+      <button class="algo-btn" data-algo="greedy">GREEDY <span>No fairness</span></button>
+      <button class="algo-btn" data-algo="cbs">CBS ONLY <span>Collision-free</span></button>
+      <button class="algo-btn active" data-algo="lp_fe">LP + FE-MADDPG <span>★ Proposed</span></button>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div id="center">
+    <div id="canvas-wrap">
+      <canvas id="sim-canvas"></canvas>
+      <div id="overlay">
+        <h2>ARIA SYSTEM READY</h2>
+        <p>Press PLAY to begin disaster response simulation</p>
+      </div>
+    </div>
+    <div id="controls">
+      <button class="ctrl-btn primary" id="btn-play">▶ PLAY</button>
+      <button class="ctrl-btn" id="btn-step">⏭ STEP</button>
+      <button class="ctrl-btn" id="btn-pause" style="display:none">⏸ PAUSE</button>
+      <button class="ctrl-btn danger" id="btn-reset">↺ RESET</button>
+      <button class="ctrl-btn" id="btn-new-ep">⊕ NEW EPISODE</button>
+      <div class="ep-wrap">
+        <div class="ep-label">EP</div>
+        <div class="ep-val" id="ctrl-ep">1</div>
+        <div class="ep-bar"><div class="ep-fill" id="ep-fill" style="width:0%"></div></div>
+      </div>
+      <div class="speed-wrap">
+        <div class="speed-label">SPEED</div>
+        <input type="range" id="speed-slider" min="1" max="10" value="4">
+        <div class="speed-label" id="speed-val">4×</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div class="panel-title">// METRICS</div>
+    <div id="metrics-grid">
+      <div class="metric-cell">
+        <div class="mc-label">GINI INDEX</div>
+        <div class="mc-val glow-cyan" id="m-gini">—</div>
+        <div class="mc-sub">↓ = fairer</div>
+      </div>
+      <div class="metric-cell">
+        <div class="mc-label">VARIANCE</div>
+        <div class="mc-val glow-orange" id="m-var">—</div>
+        <div class="mc-sub">load spread</div>
+      </div>
+      <div class="metric-cell">
+        <div class="mc-label">MAKESPAN</div>
+        <div class="mc-val glow-green" id="m-make">—</div>
+        <div class="mc-sub">total steps</div>
+      </div>
+      <div class="metric-cell">
+        <div class="mc-label">COLLABS</div>
+        <div class="mc-val" style="color:#c084fc;text-shadow:0 0 10px #c084fc" id="m-collab">0</div>
+        <div class="mc-sub">joint ops</div>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-label">// FAIRNESS REWARD / AGENT</div>
+      <canvas class="mini-chart" id="chart-fairness" height="80"></canvas>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-label">// TASK LOAD DISTRIBUTION</div>
+      <canvas class="mini-chart" id="chart-loads" height="80"></canvas>
+    </div>
+
+    <div class="panel-title" style="padding-top:8px">// EVENT LOG</div>
+    <div id="event-log"></div>
+
+    <div id="ep-history">
+      <div class="ep-hist-title">// EPISODE GROWTH (GINI)</div>
+      <canvas id="ep-hist-canvas" height="60"></canvas>
+    </div>
+  </div>
+</div>
+</div>
+<div id="tooltip"></div>
+
+<script>
+/* ============================================================
+   ARIA SIMULATION ENGINE
+   Fair + Efficient Multi-Agent Disaster Response
+   Pham · Thorpe · Topcu  |  NSF REU #2150390
+   ============================================================ */
+
+// ── SEEDED RNG ──────────────────────────────────────────────
+class RNG {
+  constructor(seed=42){this.s=seed}
+  next(){this.s=(1664525*this.s+1013904223)>>>0;return this.s/4294967296}
+  int(a,b){return a+Math.floor(this.next()*(b-a))}
+  choose(arr){return arr[this.int(0,arr.length)]}
+  shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(this.next()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+}
+
+// ── ROBOT ROLES ──────────────────────────────────────────────
+const ROLES = {
+  SCOUT:    { name:'Scout',      icon:'🔍', color:'#00e5ff', desc:'Area recon & survivor detection', cap:['detect'] },
+  MEDIC:    { name:'Medic',      icon:'🏥', color:'#ff6b35', desc:'Triage & medical assistance',     cap:['heal','extract'] },
+  ENGINEER: { name:'Engineer',   icon:'⚙️',  color:'#ffcc00', desc:'Obstacle removal & path clear',  cap:['clear','build'] },
+  CARRIER:  { name:'Carrier',    icon:'🚚', color:'#39ff14', desc:'Survivor extraction & transport', cap:['carry','extract'] },
+  FIRE:     { name:'FireBot',    icon:'🔥', color:'#ff3b5c', desc:'Fire suppression & containment',  cap:['suppress','cool'] },
+};
+
+// ── MISSION TYPES ─────────────────────────────────────────────
+const MISSIONS = {
+  SURVIVOR:  { name:'Survivor',    icon:'🧑', color:'#ff6b35', requires:['detect','extract','heal'], priority:3, duration:8 },
+  FIRE_SRC:  { name:'Fire Source', icon:'🔥', color:'#ff3b5c', requires:['suppress'],                priority:2, duration:6 },
+  DEBRIS:    { name:'Debris',      icon:'🪨', color:'#a0a0a0', requires:['clear'],                   priority:1, duration:5 },
+  SUPPLY:    { name:'Supply Drop', icon:'📦', color:'#c084fc', requires:['carry'],                   priority:1, duration:4 },
+  RECON:    { name:'Recon Zone',  icon:'📡', color:'#00e5ff', requires:['detect'],                   priority:0, duration:3 },
+};
+
+// ── CONSTANTS ──────────────────────────────────────────────
+const GRID = 14;
+const CELL = 46;
+const PAD  = 20;
+
+// ── STATE ─────────────────────────────────────────────────
+let rng, robots=[], missions=[], obstacles=[], paths={};
+let step=0, episode=1, running=false, intervalId=null;
+let algorithm='lp_fe', collabCount=0;
+let episodeHistory=[]; // {ep, gini, makespan, collabs}
+let fairnessHistory={}; // agentId -> [rewards]
+let loadHistory=[];
+let logQ=[];
+
+// ── CANVAS SETUP ─────────────────────────────────────────
+const canvas  = document.getElementById('sim-canvas');
+const ctx     = canvas.getContext('2d');
+const wrap    = document.getElementById('canvas-wrap');
+
+function resizeCanvas(){
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  render();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// ── UTILITY ──────────────────────────────────────────────
+const manhattan = (a,b) => Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1]);
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+function gini(vals){
+  if(!vals.length) return 0;
+  const a = [...vals].sort((x,y)=>x-y);
+  const n = a.length, s = a.reduce((x,y)=>x+y,0);
+  if(s===0) return 0;
+  let num=0;
+  for(let i=0;i<n;i++) num+=(2*(i+1)-n-1)*a[i];
+  return Math.max(0, num/(n*s));
+}
+
+function variance(vals){
+  if(!vals.length) return 0;
+  const m=vals.reduce((a,b)=>a+b,0)/vals.length;
+  return vals.reduce((a,b)=>a+(b-m)**2,0)/vals.length;
+}
+
+// Fairness reward from paper: r_t^i = (ε + |e_i/ē - 1|) / ē
+function fairnessReward(perfs){
+  const eps=1e-6;
+  const eBar = perfs.reduce((a,b)=>a+b,0)/perfs.length || eps;
+  return perfs.map(e=>(eps+Math.abs(e/eBar-1))/eBar);
+}
+
+// ── A* PATHFINDING ────────────────────────────────────────
+function astar(start, goal, blocked=new Set()){
+  const key=p=>`${p[0]},${p[1]}`;
+  const h=p=>manhattan(p,goal);
+  const open=[{f:h(start),g:0,pos:start,path:[start]}];
+  const visited=new Set();
+
+  while(open.length){
+    open.sort((a,b)=>a.f-b.f);
+    const {g,pos,path}=open.shift();
+    const k=key(pos);
+    if(visited.has(k)) continue;
+    visited.add(k);
+    if(pos[0]===goal[0]&&pos[1]===goal[1]) return path;
+    for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
+      const np=[pos[0]+dr,pos[1]+dc];
+      const nk=key(np);
+      if(np[0]<0||np[0]>=GRID||np[1]<0||np[1]>=GRID) continue;
+      if(blocked.has(nk)||visited.has(nk)) continue;
+      const ng=g+1;
+      open.push({f:ng+h(np),g:ng,pos:np,path:[...path,np]});
+    }
+  }
+  return [start]; // no path
+}
+
+// Simple CBS: resolve conflicts by adding wait steps
+function cbs(startGoals){
+  const paths={};
+  const obstacleSet=new Set(obstacles.map(o=>`${o[0]},${o[1]}`));
+
+  for(const [id,{start,goal}] of Object.entries(startGoals)){
+    paths[id]=astar(start,goal,obstacleSet);
+  }
+
+  // Resolve conflicts (simplified: pad shorter paths with wait)
+  const maxLen=Math.max(...Object.values(paths).map(p=>p.length));
+  for(const id in paths){
+    while(paths[id].length<maxLen){
+      paths[id].push(paths[id][paths[id].length-1]);
+    }
+  }
+
+  // Detect and resolve vertex conflicts
+  for(let t=0;t<maxLen;t++){
+    const posMap={};
+    for(const id in paths){
+      const p=paths[id][Math.min(t,paths[id].length-1)];
+      const k=`${p[0]},${p[1]}`;
+      if(posMap[k]!==undefined){
+        // Add wait to later robot
+        paths[id].splice(t,0,paths[id][Math.max(0,t-1)]);
+      } else {
+        posMap[k]=id;
+      }
+    }
+  }
+  return paths;
+}
+
+// ── LP TASK ALLOCATION ────────────────────────────────────
+function lpAllocate(robots, missions){
+  // Cost matrix: c[i][j] = dist(robot_i, mission_j)
+  const n=robots.length, m=missions.length;
+  if(!m) return Object.fromEntries(robots.map(r=>[r.id,[]]));
+
+  const cost=robots.map(r=>missions.map(ms=>manhattan(r.pos,ms.pos)));
+
+  // Simple LP via greedy with load balancing (simulate LP fairness)
+  const assign=Object.fromEntries(robots.map(r=>[r.id,[]]));
+  const loads=Object.fromEntries(robots.map(r=>[r.id,0]));
+
+  // Sort missions by priority descending
+  const sortedM=[...missions].sort((a,b)=>b.type.priority-a.type.priority);
+
+  for(const ms of sortedM){
+    // Find capable robots
+    const capable=robots.filter(r=>
+      ms.type.requires.some(req=>r.role.cap.includes(req))
+    );
+    if(!capable.length) {
+      // assign to least loaded
+      const best=robots.reduce((a,b)=>loads[a.id]<=loads[b.id]?a:b);
+      assign[best.id].push(ms);
+      loads[best.id]++;
+      continue;
+    }
+
+    // LP fairness: score = dist + λ * load_penalty
+    const λ=3;
+    const scored=capable.map(r=>({
+      r, score:manhattan(r.pos,ms.pos) + λ*loads[r.id]
+    })).sort((a,b)=>a.score-b.score);
+
+    assign[scored[0].r.id].push(ms);
+    loads[scored[0].r.id]++;
+  }
+  return assign;
+}
+
+function greedyAllocate(robots, missions){
+  const assign=Object.fromEntries(robots.map(r=>[r.id,[]]));
+  for(const ms of missions){
+    const best=robots.reduce((a,b)=>
+      manhattan(a.pos,ms.pos)<=manhattan(b.pos,ms.pos)?a:b
+    );
+    assign[best.id].push(ms);
+  }
+  return assign;
+}
+
+// ── COLLABORATION DETECTION ──────────────────────────────
+function checkCollaboration(){
+  // Check if multiple robots are adjacent and working on same/related mission
+  for(let i=0;i<robots.length;i++){
+    for(let j=i+1;j<robots.length;j++){
+      const ri=robots[i], rj=robots[j];
+      if(manhattan(ri.pos,rj.pos)<=1 && ri.status==='working' && rj.status==='working'){
+        if(ri.currentMission && rj.currentMission){
+          // Same mission = collaboration!
+          if(ri.currentMission===rj.currentMission){
+            ri.collaborating=rj.id;
+            rj.collaborating=ri.id;
+            collabCount++;
+            logEvent('collab',`🤝 R${ri.id} (${ri.role.name}) + R${rj.id} (${rj.role.name}) JOINT OP on ${ri.currentMission.type.name}`);
+            return true;
+          }
+          // Compatible missions (e.g. scout+medic near survivor)
+          const ms=ri.currentMission;
+          if(ms.type===MISSIONS.SURVIVOR){
+            const caps=new Set([...ri.role.cap,...rj.role.cap]);
+            const covered=ms.type.requires.filter(r=>caps.has(r));
+            if(covered.length===ms.type.requires.length){
+              collabCount++;
+              ri.collaborating=rj.id;
+              rj.collaborating=ri.id;
+              logEvent('collab',`🤝 Multi-role COLLAB: ${ri.role.icon}${ri.role.name} + ${rj.role.icon}${rj.role.name} → ${ms.type.icon}${ms.type.name}`);
+              return true;
+            }
+          }
+        }
+      } else {
+        if(ri.collaborating===rj.id) ri.collaborating=null;
+        if(rj.collaborating===ri.id) rj.collaborating=null;
+      }
+    }
+  }
+}
+
+// ── WORLD GENERATION ─────────────────────────────────────
+function buildWorld(seed){
+  rng=new RNG(seed);
+  obstacles=[];
+  robots=[];
+  missions=[];
+  paths={};
+  step=0; collabCount=0;
+  fairnessHistory={};
+  loadHistory=[];
+
+  const occupied=new Set();
+  const place=()=>{
+    let r,c;
+    do{r=rng.int(0,GRID);c=rng.int(0,GRID);}
+    while(occupied.has(`${r},${c}`));
+    occupied.add(`${r},${c}`);
+    return [r,c];
+  };
+
+  // Obstacles (walls + rubble)
+  for(let i=0;i<18;i++) obstacles.push(place());
+
+  // Robots with assigned roles
+  const roleKeys=Object.keys(ROLES);
+  for(let i=0;i<5;i++){
+    const pos=place();
+    const role=ROLES[roleKeys[i%roleKeys.length]];
+    robots.push({
+      id:i, pos:[...pos], start:[...pos],
+      role, status:'idle', path:[], pathIdx:0,
+      currentMission:null, tasksCompleted:0,
+      distTraveled:0, collaborating:null,
+      color: role.color,
+      fairnessRewards:[]
+    });
+    fairnessHistory[i]=[];
+  }
+
+  // Missions of various types
+  const mTypes=Object.values(MISSIONS);
+  const n=12;
+  for(let i=0;i<n;i++){
+    const pos=place();
+    const mType=mTypes[i%mTypes.length];
+    missions.push({
+      id:i, pos:[...pos], type:mType,
+      status:'pending', assignedTo:[], progress:0,
+      workLeft: mType.duration
+    });
+  }
+
+  allocateAndPlan();
+  updateRoster();
+  updateMetrics();
+  document.getElementById('hdr-tasks').textContent=`0/${missions.length}`;
+  document.getElementById('ctrl-ep').textContent=episode;
+}
+
+function allocateAndPlan(){
+  const pendingM=missions.filter(m=>m.status==='pending');
+  let assign;
+
+  if(algorithm==='greedy'){
+    assign=greedyAllocate(robots,pendingM);
+  } else {
+    // LP + FE-MADDPG or CBS
+    assign=lpAllocate(robots,pendingM);
+  }
+
+  const obstacleSet=new Set(obstacles.map(o=>`${o[0]},${o[1]}`));
+
+  // For CBS: collect all start→goal pairs
+  const startGoals={};
+  for(const robot of robots){
+    const myMissions=assign[robot.id]||[];
+    if(myMissions.length){
+      robot.missionQueue=[...myMissions];
+      const first=myMissions[0];
+      startGoals[robot.id]={start:robot.pos, goal:first.pos};
+    } else {
+      robot.missionQueue=[];
+      robot.status='idle';
+    }
+  }
+
+  if(algorithm==='cbs'||algorithm==='lp_fe'){
+    const cbsPaths=cbs(startGoals);
+    for(const robot of robots){
+      if(cbsPaths[robot.id]){
+        robot.path=cbsPaths[robot.id];
+        robot.pathIdx=0;
+        robot.status='moving';
+      }
+    }
+  } else {
+    // greedy: plain A*
+    for(const robot of robots){
+      if(robot.missionQueue?.length){
+        robot.path=astar(robot.pos,robot.missionQueue[0].pos,obstacleSet);
+        robot.pathIdx=0;
+        robot.status='moving';
+      }
+    }
+  }
+
+  logEvent('info',`Algorithm: ${algorithm.toUpperCase()} | Tasks: ${pendingM.length} | Robots: ${robots.length}`);
+}
+
+// ── SIMULATION STEP ───────────────────────────────────────
+function simStep(){
+  step++;
+  document.getElementById('hdr-step').textContent=step;
+
+  const obstacleSet=new Set(obstacles.map(o=>`${o[0]},${o[1]}`));
+  let anyActive=false;
+
+  // Compute performances for fairness reward
+  const perfs=robots.map(r=>{
+    if(r.currentMission) return 1/(manhattan(r.pos,r.currentMission.pos)+1e-6);
+    return 0.1;
+  });
+  const fRewards=fairnessReward(perfs);
+  fRewards.forEach((fw,i)=>{
+    robots[i].fairnessRewards.push(fw);
+    fairnessHistory[i].push(fw);
+  });
+
+  for(const robot of robots){
+    if(robot.status==='done') continue;
+    anyActive=true;
+
+    if(robot.status==='moving'){
+      // Advance along path
+      if(robot.pathIdx<robot.path.length-1){
+        robot.pathIdx++;
+        const prev=robot.pos;
+        robot.pos=[...robot.path[robot.pathIdx]];
+        robot.distTraveled+=manhattan(prev,robot.pos);
+      }
+
+      // Arrived at mission?
+      if(robot.missionQueue?.length){
+        const target=robot.missionQueue[0];
+        if(robot.pos[0]===target.pos[0]&&robot.pos[1]===target.pos[1]){
+          robot.currentMission=target;
+          robot.status='working';
+          if(!target.assignedTo.includes(robot.id)) target.assignedTo.push(robot.id);
+          target.status='active';
+          logEvent('action',`${robot.role.icon} R${robot.id} (${robot.role.name}) → ${target.type.icon} ${target.type.name} [Priority: ${target.type.priority}]`);
+        }
+      }
+    }
+
+    if(robot.status==='working'){
+      const ms=robot.currentMission;
+      if(ms){
+        // Check if multi-robot can speed up work
+        const helpers=robots.filter(r=>r.id!==robot.id&&r.currentMission===ms&&r.status==='working');
+        const speedup=1+helpers.length*0.5;
+        ms.progress+=speedup;
+        ms.workLeft=Math.max(0,ms.type.duration-ms.progress/10);
+
+        if(ms.progress>=ms.type.duration*10){
+          ms.status='done';
+          robot.tasksCompleted++;
+          robot.status='idle';
+          robot.currentMission=null;
+          robot.missionQueue.shift();
+          logEvent('done',`✅ R${robot.id} completed ${ms.type.icon} ${ms.type.name} (${helpers.length>0?'COLLAB':'solo'})`);
+
+          // Move to next mission in queue
+          if(robot.missionQueue.length){
+            const next=robot.missionQueue[0];
+            robot.path=astar(robot.pos,next.pos,obstacleSet);
+            robot.pathIdx=0;
+            robot.status='moving';
+          }
+        }
+      }
+    }
+  }
+
+  // Check collaborations
+  checkCollaboration();
+
+  // Update mission statuses
+  const done=missions.filter(m=>m.status==='done').length;
+  const total=missions.length;
+  document.getElementById('hdr-tasks').textContent=`${done}/${total}`;
+  document.getElementById('ep-fill').style.width=`${(done/total*100)}%`;
+
+  // Load data
+  loadHistory.push(robots.map(r=>r.tasksCompleted));
+
+  updateMetrics();
+  updateRoster();
+  render();
+
+  // Check episode complete
+  if(done>=total || !anyActive){
+    endEpisode();
+  }
+}
+
+function endEpisode(){
+  running=false;
+  clearInterval(intervalId);
+  document.getElementById('btn-play').style.display='inline-flex';
+  document.getElementById('btn-pause').style.display='none';
+
+  const loads=robots.map(r=>r.tasksCompleted);
+  const g=gini(loads);
+  episodeHistory.push({ep:episode, gini:g, makespan:step, collabs:collabCount});
+
+  logEvent('done',`🎯 EPISODE ${episode} COMPLETE — Makespan: ${step} | Gini: ${g.toFixed(4)} | Collabs: ${collabCount}`);
+  updateEpHistory();
+
+  document.getElementById('overlay').style.display='flex';
+  document.getElementById('overlay').innerHTML=`
+    <h2>EPISODE ${episode} COMPLETE</h2>
+    <p style="margin-bottom:8px">Makespan: ${step} steps | Gini: ${g.toFixed(4)} | Collaborations: ${collabCount}</p>
+    <p>Press NEW EPISODE to continue or RESET to replay</p>
+  `;
+}
+
+// ── METRICS ──────────────────────────────────────────────
+function updateMetrics(){
+  const loads=robots.map(r=>r.tasksCompleted);
+  const g=gini(loads).toFixed(4);
+  const v=variance(loads).toFixed(4);
+  document.getElementById('m-gini').textContent=g;
+  document.getElementById('m-var').textContent=v;
+  document.getElementById('m-make').textContent=step;
+  document.getElementById('m-collab').textContent=collabCount;
+  document.getElementById('hdr-fair').textContent=g;
+
+  drawFairnessChart();
+  drawLoadChart();
+}
+
+function drawFairnessChart(){
+  const c=document.getElementById('chart-fairness');
+  const cx=c.getContext('2d');
+  c.width=c.offsetWidth; c.height=80;
+  cx.clearRect(0,0,c.width,c.height);
+
+  const colors=['#00e5ff','#ff6b35','#ffcc00','#39ff14','#ff3b5c'];
+  const allData=Object.values(fairnessHistory);
+  if(!allData[0]?.length) return;
+
+  const maxLen=Math.max(...allData.map(d=>d.length));
+  const maxVal=Math.max(...allData.flat())||1;
+
+  for(let i=0;i<robots.length;i++){
+    const data=fairnessHistory[i]||[];
+    if(!data.length) continue;
+    cx.beginPath();
+    cx.strokeStyle=colors[i%colors.length];
+    cx.lineWidth=1.5;
+    cx.globalAlpha=0.8;
+    data.forEach((v,t)=>{
+      const x=(t/maxLen)*c.width;
+      const y=c.height-(v/maxVal)*c.height;
+      t===0?cx.moveTo(x,y):cx.lineTo(x,y);
+    });
+    cx.stroke();
+    cx.globalAlpha=1;
+  }
+
+  // Labels
+  cx.fillStyle='rgba(74,90,112,0.5)';
+  cx.font='7px Space Mono';
+  robots.forEach((r,i)=>{
+    const data=fairnessHistory[i]||[];
+    if(data.length){
+      cx.fillStyle=colors[i%colors.length];
+      const x=data.length/maxLen*c.width;
+      const y=c.height-(data[data.length-1]/maxVal)*c.height;
+      cx.fillRect(Math.min(x,c.width-12),Math.max(y-1,0),10,2);
+    }
+  });
+}
+
+function drawLoadChart(){
+  const c=document.getElementById('chart-loads');
+  const cx=c.getContext('2d');
+  c.width=c.offsetWidth; c.height=80;
+  cx.clearRect(0,0,c.width,c.height);
+
+  const loads=robots.map(r=>r.tasksCompleted);
+  const maxVal=Math.max(...loads,1);
+  const w=c.width/robots.length;
+  const colors=['#00e5ff','#ff6b35','#ffcc00','#39ff14','#ff3b5c'];
+
+  loads.forEach((l,i)=>{
+    const h=(l/maxVal)*(c.height-10);
+    cx.fillStyle=colors[i%colors.length]+'66';
+    cx.fillRect(i*w+2, c.height-h, w-4, h);
+    cx.fillStyle=colors[i%colors.length];
+    cx.fillRect(i*w+2, c.height-h, w-4, 2);
+    cx.fillStyle='rgba(74,90,112,0.9)';
+    cx.font='7px Space Mono';
+    cx.fillText(l, i*w+w/2-3, c.height-h-3);
+  });
+}
+
+function updateEpHistory(){
+  const c=document.getElementById('ep-hist-canvas');
+  const cx=c.getContext('2d');
+  c.width=c.offsetWidth; c.height=60;
+  cx.clearRect(0,0,c.width,c.height);
+
+  if(episodeHistory.length<2) return;
+  const maxG=Math.max(...episodeHistory.map(e=>e.gini))||0.01;
+  const n=episodeHistory.length;
+
+  // Gini line
+  cx.beginPath();
+  cx.strokeStyle='#00e5ff';
+  cx.lineWidth=2;
+  episodeHistory.forEach((e,i)=>{
+    const x=(i/(n-1))*c.width;
+    const y=c.height-(e.gini/maxG)*(c.height-8)+4;
+    i===0?cx.moveTo(x,y):cx.lineTo(x,y);
+  });
+  cx.stroke();
+
+  // Fill
+  cx.beginPath();
+  episodeHistory.forEach((e,i)=>{
+    const x=(i/(n-1))*c.width;
+    const y=c.height-(e.gini/maxG)*(c.height-8)+4;
+    i===0?cx.moveTo(x,y):cx.lineTo(x,y);
+  });
+  cx.lineTo(c.width,c.height);
+  cx.lineTo(0,c.height);
+  cx.fillStyle='rgba(0,229,255,0.08)';
+  cx.fill();
+
+  // Dots
+  episodeHistory.forEach((e,i)=>{
+    const x=(i/(n-1))*c.width;
+    const y=c.height-(e.gini/maxG)*(c.height-8)+4;
+    cx.beginPath();
+    cx.arc(x,y,2,0,Math.PI*2);
+    cx.fillStyle='#00e5ff';
+    cx.fill();
+  });
+
+  // Labels
+  cx.fillStyle='rgba(74,90,112,0.8)';
+  cx.font='7px Space Mono';
+  cx.fillText(`EP 1`,2,c.height-2);
+  cx.fillText(`EP ${n}`,c.width-24,c.height-2);
+}
+
+// ── ROSTER UI ─────────────────────────────────────────────
+function updateRoster(){
+  const roster=document.getElementById('roster');
+  roster.innerHTML='';
+  robots.forEach(r=>{
+    const loads=robots.map(rb=>rb.tasksCompleted);
+    const maxL=Math.max(...loads,1);
+    const pct=(r.tasksCompleted/maxL*100)||0;
+    const colorMap={idle:'status-idle',moving:'status-moving',working:'status-working',done:'status-done',waiting:'status-waiting'};
+    const ms=r.currentMission;
+
+    const div=document.createElement('div');
+    div.className=`robot-card ${r.status!=='idle'?'active':''}`;
+    div.style.setProperty('--rc-color',r.color);
+    div.querySelector?.('.robot-card')?.style?.setProperty('border-left-color',r.color);
+    div.innerHTML=`
+      <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${r.color};border-radius:2px 0 0 2px;opacity:${r.status==='idle'?0.3:1}"></div>
+      <div class="rc-top" style="padding-left:6px">
+        <span class="rc-icon">${r.role.icon}</span>
+        <div>
+          <div class="rc-name" style="color:${r.color}">R${r.id} — ${r.role.name}</div>
+          <div class="rc-role">${r.role.desc}</div>
+        </div>
+        <span class="rc-status ${colorMap[r.status]||'status-idle'}">${r.status.toUpperCase()}</span>
+      </div>
+      <div class="rc-bar-wrap" style="margin-left:6px">
+        <div class="rc-bar" style="width:${pct}%;background:${r.color}"></div>
+      </div>
+      <div class="rc-task" style="padding-left:6px">${ms?`${ms.type.icon} ${ms.type.name} (${Math.round(ms.progress/ms.type.duration/10*100)}%)`:r.missionQueue?.length?`Queue: ${r.missionQueue.length} tasks`:'No mission'}</div>
+      <div class="rc-stats" style="padding-left:6px">
+        <div class="rc-stat">DONE <span>${r.tasksCompleted}</span></div>
+        <div class="rc-stat">DIST <span>${r.distTraveled}</span></div>
+        ${r.collaborating!==null?`<div class="rc-stat" style="color:#c084fc">🤝 R${r.collaborating}</div>`:''}
+      </div>
+    `;
+    roster.appendChild(div);
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────
+function render(){
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // Compute grid offset to center
+  const totalW=GRID*CELL, totalH=GRID*CELL;
+  const ox=(W-totalW)/2, oy=(H-totalH)/2;
+
+  // Grid background
+  ctx.fillStyle='rgba(15,19,24,0.9)';
+  ctx.fillRect(ox,oy,totalW,totalH);
+
+  // Grid lines
+  ctx.strokeStyle='rgba(30,37,48,0.6)';
+  ctx.lineWidth=0.5;
+  for(let r=0;r<=GRID;r++){
+    ctx.beginPath(); ctx.moveTo(ox,oy+r*CELL); ctx.lineTo(ox+totalW,oy+r*CELL); ctx.stroke();
+  }
+  for(let c=0;c<=GRID;c++){
+    ctx.beginPath(); ctx.moveTo(ox+c*CELL,oy); ctx.lineTo(ox+c*CELL,oy+totalH); ctx.stroke();
+  }
+
+  // Obstacles
+  obstacles.forEach(([r,c])=>{
+    const x=ox+c*CELL, y=oy+r*CELL;
+    // Rubble pattern
+    ctx.fillStyle='#1a2230';
+    ctx.fillRect(x+1,y+1,CELL-2,CELL-2);
+    ctx.fillStyle='rgba(255,255,255,0.05)';
+    for(let i=0;i<3;i++){
+      const bx=x+2+rng.next()*30, by=y+2+rng.next()*30;
+      ctx.fillRect(bx,by,8+rng.next()*12,4+rng.next()*8);
+    }
+    ctx.strokeStyle='#2a3545';
+    ctx.lineWidth=1;
+    ctx.strokeRect(x+1,y+1,CELL-2,CELL-2);
+    // X mark
+    ctx.fillStyle='#3a4a5a';
+    ctx.font='bold 18px sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('▪',x+CELL/2,y+CELL/2);
+  });
+
+  // Missions
+  missions.forEach(ms=>{
+    if(ms.status==='done') return;
+    const [r,c]=ms.pos;
+    const x=ox+c*CELL, y=oy+r*CELL;
+    const pct=ms.progress/(ms.type.duration*10);
+
+    // Pulse glow for active missions
+    if(ms.status==='active'){
+      const t=Date.now()/600;
+      const alpha=0.15+0.1*Math.sin(t);
+      ctx.fillStyle=ms.type.color+Math.round(alpha*255).toString(16).padStart(2,'0');
+      ctx.fillRect(x-3,y-3,CELL+6,CELL+6);
+    }
+
+    // Background
+    ctx.fillStyle=ms.type.color+'22';
+    ctx.fillRect(x+2,y+2,CELL-4,CELL-4);
+    ctx.strokeStyle=ms.type.color+'88';
+    ctx.lineWidth=1.5;
+    ctx.strokeRect(x+2,y+2,CELL-4,CELL-4);
+
+    // Progress bar
+    if(pct>0){
+      ctx.fillStyle=ms.type.color+'44';
+      ctx.fillRect(x+2,y+CELL-8,CELL-4,6);
+      ctx.fillStyle=ms.type.color;
+      ctx.fillRect(x+2,y+CELL-8,(CELL-4)*pct,6);
+    }
+
+    // Icon
+    ctx.font=`${CELL*0.38}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(ms.type.icon, x+CELL/2, y+CELL/2-3);
+
+    // Label
+    ctx.fillStyle=ms.type.color;
+    ctx.font=`bold 7px Space Mono`;
+    ctx.fillText(ms.type.name.substring(0,7).toUpperCase(), x+CELL/2, y+CELL-12);
+
+    // Priority indicator
+    for(let p=0;p<ms.type.priority;p++){
+      ctx.fillStyle=ms.type.color;
+      ctx.fillRect(x+4+p*5, y+4, 3, 3);
+    }
+  });
+
+  // Done missions (faded)
+  missions.filter(m=>m.status==='done').forEach(ms=>{
+    const [r,c]=ms.pos;
+    const x=ox+c*CELL, y=oy+r*CELL;
+    ctx.fillStyle='rgba(57,255,20,0.05)';
+    ctx.fillRect(x+2,y+2,CELL-4,CELL-4);
+    ctx.font=`${CELL*0.35}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.globalAlpha=0.25;
+    ctx.fillText('✅', x+CELL/2, y+CELL/2);
+    ctx.globalAlpha=1;
+  });
+
+  // Robot paths (trail lines)
+  robots.forEach(r=>{
+    if(r.path.length<2) return;
+    ctx.strokeStyle=r.color+'44';
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([3,5]);
+    ctx.beginPath();
+    r.path.forEach(([pr,pc],i)=>{
+      const x=ox+pc*CELL+CELL/2, y=oy+pr*CELL+CELL/2;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Collaboration beams
+  robots.forEach(r=>{
+    if(r.collaborating!==null){
+      const partner=robots.find(rb=>rb.id===r.collaborating);
+      if(partner){
+        const t=Date.now()/400;
+        const alpha=0.3+0.3*Math.sin(t);
+        ctx.strokeStyle=`rgba(192,132,252,${alpha})`;
+        ctx.lineWidth=2;
+        ctx.setLineDash([4,4]);
+        ctx.beginPath();
+        ctx.moveTo(ox+r.pos[1]*CELL+CELL/2, oy+r.pos[0]*CELL+CELL/2);
+        ctx.lineTo(ox+partner.pos[1]*CELL+CELL/2, oy+partner.pos[0]*CELL+CELL/2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  });
+
+  // Robots
+  robots.forEach(r=>{
+    const [row,col]=r.pos;
+    const x=ox+col*CELL+CELL/2, y=oy+row*CELL+CELL/2;
+    const sz=CELL*0.28;
+
+    // Glow
+    const glowAlpha=r.status==='working'?0.4:r.status==='moving'?0.2:0.1;
+    const grd=ctx.createRadialGradient(x,y,0,x,y,sz*2.5);
+    grd.addColorStop(0,r.color+'66');
+    grd.addColorStop(1,'transparent');
+    ctx.fillStyle=grd;
+    ctx.beginPath();
+    ctx.arc(x,y,sz*2.5,0,Math.PI*2);
+    ctx.fill();
+
+    // Body (hexagon-like)
+    ctx.beginPath();
+    for(let i=0;i<6;i++){
+      const angle=i*Math.PI/3-Math.PI/6;
+      const px=x+sz*Math.cos(angle), py=y+sz*Math.sin(angle);
+      i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.fillStyle=r.status==='idle'?r.color+'44':r.color+'cc';
+    ctx.fill();
+    ctx.strokeStyle=r.color;
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+
+    // Role icon
+    ctx.font=`${sz*0.9}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(r.role.icon, x, y);
+
+    // ID label
+    ctx.fillStyle=r.color;
+    ctx.font=`bold 7px Space Mono`;
+    ctx.fillText(`R${r.id}`, x, y+sz+6);
+
+    // Collaborating indicator
+    if(r.collaborating!==null){
+      ctx.fillStyle='#c084fc';
+      ctx.font='9px sans-serif';
+      ctx.fillText('🤝', x+sz, y-sz);
+    }
+  });
+
+  // Step counter overlay (bottom left of grid)
+  ctx.fillStyle='rgba(0,229,255,0.7)';
+  ctx.font='10px Space Mono';
+  ctx.textAlign='left';
+  ctx.fillText(`STEP ${step}`, ox+4, oy+totalH-6);
+}
+
+// ── EVENT LOG ─────────────────────────────────────────────
+function logEvent(type, msg){
+  const log=document.getElementById('event-log');
+  const div=document.createElement('div');
+  div.className=`log-entry log-${type}`;
+  const t=String(step).padStart(4,'0');
+  div.innerHTML=`<span class="log-time">[${t}]</span> ${msg}`;
+  log.insertBefore(div, log.firstChild);
+  if(log.children.length>50) log.removeChild(log.lastChild);
+}
+
+// ── ROLE LEGEND ──────────────────────────────────────────
+function buildLegend(){
+  const leg=document.getElementById('role-legend');
+  leg.innerHTML='';
+  Object.values(ROLES).forEach(r=>{
+    const span=document.createElement('span');
+    span.className='role-pill';
+    span.style.cssText=`color:${r.color};border-color:${r.color}44;background:${r.color}11`;
+    span.textContent=`${r.icon} ${r.name}`;
+    leg.appendChild(span);
+  });
+}
+
+// ── CONTROLS ─────────────────────────────────────────────
+let animFrame=null;
+let lastTime=0;
+let accumulator=0;
+
+function getStepInterval(){
+  const speed=parseInt(document.getElementById('speed-slider').value);
+  return Math.max(50, 600-speed*50);
+}
+
+function startLoop(){
+  if(running) return;
+  running=true;
+  document.getElementById('overlay').style.display='none';
+  document.getElementById('btn-play').style.display='none';
+  document.getElementById('btn-pause').style.display='inline-flex';
+
+  function loop(){
+    if(!running) return;
+    simStep();
+    intervalId=setTimeout(loop, getStepInterval());
+  }
+  intervalId=setTimeout(loop, getStepInterval());
+}
+
+function pauseSim(){
+  running=false;
+  clearTimeout(intervalId);
+  document.getElementById('btn-play').style.display='inline-flex';
+  document.getElementById('btn-pause').style.display='none';
+}
+
+function resetSim(){
+  pauseSim();
+  buildWorld(episode*100+42);
+  document.getElementById('overlay').style.display='flex';
+  document.getElementById('overlay').innerHTML=`<h2>ARIA SYSTEM READY</h2><p>Press PLAY to begin disaster response simulation</p>`;
+  document.getElementById('event-log').innerHTML='';
+  render();
+}
+
+function newEpisode(){
+  pauseSim();
+  episode++;
+  document.getElementById('ep-fill').style.width='0%';
+  buildWorld(episode*100+42);
+  document.getElementById('overlay').style.display='flex';
+  document.getElementById('overlay').innerHTML=`<h2>EPISODE ${episode} LOADED</h2><p>New disaster scenario generated — Press PLAY</p>`;
+  document.getElementById('event-log').innerHTML='';
+  render();
+}
+
+// ── BUTTON WIRING ─────────────────────────────────────────
+document.getElementById('btn-play').addEventListener('click', startLoop);
+document.getElementById('btn-pause').addEventListener('click', pauseSim);
+document.getElementById('btn-reset').addEventListener('click', resetSim);
+document.getElementById('btn-step').addEventListener('click', ()=>{
+  document.getElementById('overlay').style.display='none';
+  simStep();
+});
+document.getElementById('btn-new-ep').addEventListener('click', newEpisode);
+
+document.getElementById('speed-slider').addEventListener('input', e=>{
+  document.getElementById('speed-val').textContent=e.target.value+'×';
+});
+
+// Algorithm selector
+document.querySelectorAll('.algo-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.algo-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    algorithm=btn.dataset.algo;
+    logEvent('info',`Algorithm switched to: ${algorithm.toUpperCase()}`);
+    if(!running) allocateAndPlan();
+  });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault(); running?pauseSim():startLoop();}
+  if(e.code==='ArrowRight'){simStep();}
+  if(e.code==='KeyR'){resetSim();}
+  if(e.code==='KeyN'){newEpisode();}
+});
+
+// Tooltip on canvas hover
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const W=canvas.width, H=canvas.height;
+  const totalW=GRID*CELL, totalH=GRID*CELL;
+  const ox=(W-totalW)/2, oy=(H-totalH)/2;
+  const col=Math.floor((mx-ox)/CELL), row=Math.floor((my-oy)/CELL);
+
+  const tt=document.getElementById('tooltip');
+  if(col<0||col>=GRID||row<0||row>=GRID){tt.style.display='none';return;}
+
+  // Check what's at this cell
+  const robot=robots.find(r=>r.pos[0]===row&&r.pos[1]===col);
+  const ms=missions.find(m=>m.pos[0]===row&&m.pos[1]===col&&m.status!=='done');
+  const obs=obstacles.find(o=>o[0]===row&&o[1]===col);
+
+  if(robot){
+    tt.innerHTML=`<b style="color:${robot.color}">${robot.role.icon} R${robot.id} — ${robot.role.name}</b><br>
+      Status: ${robot.status}<br>
+      Tasks done: ${robot.tasksCompleted}<br>
+      Distance: ${robot.distTraveled}<br>
+      Caps: ${robot.role.cap.join(', ')}<br>
+      ${robot.collaborating!==null?`🤝 Collaborating with R${robot.collaborating}`:''}`;
+    tt.style.display='block';
+  } else if(ms){
+    const pct=Math.round(ms.progress/ms.type.duration/10*100);
+    tt.innerHTML=`<b style="color:${ms.type.color}">${ms.type.icon} ${ms.type.name}</b><br>
+      Priority: ${'★'.repeat(ms.type.priority)||'—'}<br>
+      Requires: ${ms.type.requires.join(', ')}<br>
+      Progress: ${pct}%<br>
+      Assigned: ${ms.assignedTo.map(id=>'R'+id).join(', ')||'none'}`;
+    tt.style.display='block';
+  } else if(obs){
+    tt.innerHTML='<b>🪨 Obstacle / Rubble</b><br>Impassable terrain';
+    tt.style.display='block';
+  } else {
+    tt.style.display='none';
+  }
+
+  tt.style.left=(e.clientX+12)+'px';
+  tt.style.top=(e.clientY-10)+'px';
+});
+canvas.addEventListener('mouseleave',()=>document.getElementById('tooltip').style.display='none');
+
+// ── ANIMATION LOOP ────────────────────────────────────────
+function animLoop(){
+  if(running||step>0) render();
+  requestAnimationFrame(animLoop);
+}
+
+// ── INIT ─────────────────────────────────────────────────
+buildLegend();
+resizeCanvas();
+buildWorld(142);
+render();
+animLoop();
+
+console.log('%cARIA Simulation Loaded','color:#00e5ff;font-family:monospace;font-size:14px');
+console.log('%cShortcuts: SPACE=play/pause | →=step | R=reset | N=new episode','color:#4a5a70;font-family:monospace;font-size:10px');
+</script>
+</body>
+</html>
