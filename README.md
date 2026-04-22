@@ -1,6 +1,6 @@
 # Fair and Efficient Task Allocation and Path Planning for Multi-Agent Systems in Disaster Response Using Linear Programming
 
-Back in the summer of 2024, I had the opportunity to participate in an NSF REU (Research Experience for Undergraduates) at the University of Texas at Austin, where I got to work alongside the Texas Advanced Computing Center (TACC) and Dr. Adam Thorpe on this project. It was honestly one of the coolest experiences I've had — getting to do real research as an undergrad and actually see it through to a paper and poster presentation.
+Back in the summer of 2024, I had the opportunity to participate in an NSF REU (Research Experience for Undergraduates) at the University of Texas at Austin, where I got to work alongside the Texas Advanced Computing Center (TACC) and Dr. Adam Thorpe on this project. It was honestly one of the coolest experiences I've had a chance to do my first ever real research as an undergrad and actually see it through to a paper and poster presentation.
 
 ---
 
