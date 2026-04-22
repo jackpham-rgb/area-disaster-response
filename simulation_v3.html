@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Area Disaster Response — Hex Terrain Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ── THEME VARIABLES ── */
+[data-theme="dark"] {
+  --bg:      #080b0f;
+  --panel:   #0c1018;
+  --panel2:  #101820;
+  --border:  #1c2530;
+  --border2: #2a3a4a;
+  --text:    #b0bec5;
+  --text2:   #546e7a;
+  --white:   #eceff1;
+  --accent:  #4fc3f7;
+  --a2:      #ff7043;
+  --a3:      #69f0ae;
+  --warn:    #ffd740;
+  --red:     #ff5252;
+  --purple:  #ce93d8;
+  --cell-bg: rgba(255,255,255,0.03);
+  --grid-ln: rgba(255,255,255,0.06);
+  --shadow:  0 2px 12px rgba(0,0,0,0.6);
+}
+[data-theme="light"] {
+  --bg:      #f0f2f4;
+  --panel:   #ffffff;
+  --panel2:  #f8f9fa;
+  --border:  #dde3ea;
+  --border2: #c5d0da;
+  --text:    #2c3e50;
+  --text2:   #7f8c9a;
+  --white:   #1a252f;
+  --accent:  #0277bd;
+  --a2:      #d84315;
+  --a3:      #2e7d32;
+  --warn:    #f57f17;
+  --red:     #c62828;
+  --purple:  #6a1b9a;
+  --cell-bg: rgba(0,0,0,0.02);
+  --grid-ln: rgba(0,0,0,0.08);
+  --shadow:  0 2px 12px rgba(0,0,0,0.15);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { height:100%; background:var(--bg); color:var(--text); font-family:'Barlow',sans-serif; overflow:hidden; transition:background 0.3s,color 0.3s; }
+
+/* ── LAYOUT ── */
+#app  { display:grid; grid-template-rows:58px 1fr; height:100vh; }
+#main { display:grid; grid-template-columns:240px 1fr 280px; overflow:hidden; }
+
+/* ── HEADER ── */
+header {
+  background:var(--panel); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:14px; padding:0 20px;
+  box-shadow:var(--shadow); transition:background 0.3s,border-color 0.3s;
+}
+.logo {
+  font-family:'Rajdhani',sans-serif; font-size:20px; font-weight:700;
+  letter-spacing:0.5px; color:var(--white); line-height:1.1;
+}
+.logo-sub { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text2); }
+.badge {
+  font-family:'Share Tech Mono',monospace; font-size:10px; padding:3px 9px;
+  border:1px solid var(--accent); color:var(--accent); border-radius:3px;
+}
+.hstats { margin-left:auto; display:flex; align-items:center; gap:20px; }
+.hs { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text2); }
+.hs b { color:var(--a3); font-size:13px; }
+
+/* Theme toggle */
+.theme-btn {
+  background:var(--panel2); border:1px solid var(--border2); border-radius:20px;
+  padding:5px 12px; cursor:pointer; display:flex; align-items:center; gap:7px;
+  font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text);
+  transition:all 0.2s;
+}
+.theme-btn:hover { border-color:var(--accent); color:var(--accent); }
+.theme-icon { font-size:14px; }
+
+/* ── LEFT PANEL ── */
+#left { background:var(--panel); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; transition:background 0.3s,border-color 0.3s; }
+.ptitle {
+  font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:3px;
+  color:var(--text2); padding:11px 16px 8px; border-bottom:1px solid var(--border);
+  text-transform:uppercase;
+}
+
+/* MDP panel */
+#mdp-box { padding:10px 14px; border-bottom:1px solid var(--border); }
+.mdp-row {
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-family:'Share Tech Mono',monospace; font-size:10px; padding:4px 0;
+  border-bottom:1px solid var(--border);
+}
+.mdp-k { color:var(--text2); }
+.mdp-v { color:var(--white); font-size:11px; }
+.mdp-eq {
+  font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--accent);
+  background:var(--panel2); padding:6px 10px; border-radius:3px; margin-top:7px;
+  line-height:1.8; border-left:2px solid var(--accent);
+}
+
+/* Roster */
+#roster { flex:1; overflow-y:auto; padding:7px; }
+#roster::-webkit-scrollbar { width:3px; }
+#roster::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+.rcard {
+  border:1px solid var(--border); border-radius:5px; padding:9px 10px;
+  margin-bottom:6px; position:relative; overflow:hidden; transition:border-color 0.2s;
+  background:var(--panel);
+}
+.rcard.active { border-color:rgba(79,195,247,0.35); }
+[data-theme="light"] .rcard.active { border-color:rgba(2,119,189,0.4); }
+.rbar { position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px 0 0 3px; }
+.rc-top { display:flex; align-items:center; gap:8px; margin-bottom:5px; padding-left:9px; }
+.rc-icon { font-size:18px; line-height:1; }
+.rc-name { font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:700; color:var(--white); }
+.rc-role { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text2); margin-top:1px; }
+.rc-status { margin-left:auto; font-family:'Share Tech Mono',monospace; font-size:9px; padding:2px 6px; border-radius:3px; }
+.s-idle    { background:var(--panel2); color:var(--text2); }
+.s-moving  { background:rgba(79,195,247,0.12); color:var(--accent); }
+.s-working { background:rgba(255,112,67,0.12); color:var(--a2); }
+.s-done    { background:rgba(105,240,174,0.12); color:var(--a3); }
+.rc-prog { height:3px; background:var(--border); border-radius:2px; margin:4px 0 4px 9px; }
+.rc-prog-fill { height:3px; border-radius:2px; transition:width 0.4s; }
+.rc-info { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text2); padding-left:9px; }
+.rc-nums { display:flex; gap:10px; padding-left:9px; margin-top:4px; }
+.rc-n { font-family:'Share Tech Mono',monospace; font-size:9px; }
+.rc-n b { color:var(--white); }
+
+/* Algo */
+#algo { padding:9px 11px; border-top:1px solid var(--border); }
+.algo-hd { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--text2); margin-bottom:6px; }
+.abtn {
+  width:100%; text-align:left; background:none; border:1px solid var(--border);
+  color:var(--text2); font-family:'Share Tech Mono',monospace; font-size:10px;
+  padding:6px 10px; border-radius:3px; cursor:pointer; margin-bottom:4px;
+  display:flex; justify-content:space-between; transition:all 0.15s;
+}
+.abtn:hover { border-color:var(--border2); color:var(--text); }
+.abtn.on { border-color:var(--accent); color:var(--accent); background:var(--panel2); }
+
+/* ── CENTER ── */
+#center { display:flex; flex-direction:column; }
+#cw { flex:1; position:relative; overflow:hidden; background:var(--bg); }
+#gc { position:absolute; inset:0; }
+
+/* Controls */
+#ctrl {
+  background:var(--panel); border-top:1px solid var(--border);
+  padding:10px 18px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  box-shadow:var(--shadow); transition:background 0.3s;
+}
+.cbtn {
+  background:var(--panel2); border:1px solid var(--border2); color:var(--text);
+  font-family:'Share Tech Mono',monospace; font-size:11px; padding:7px 14px;
+  border-radius:3px; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:6px;
+}
+.cbtn:hover { border-color:var(--accent); color:var(--accent); }
+.cbtn.pri { background:rgba(79,195,247,0.08); border-color:var(--accent); color:var(--accent); }
+[data-theme="light"] .cbtn.pri { background:rgba(2,119,189,0.08); border-color:var(--accent); color:var(--accent); }
+.cbtn.dng { background:rgba(255,82,82,0.08); border-color:var(--red); color:var(--red); }
+[data-theme="light"] .cbtn.dng { background:rgba(198,40,40,0.08); border-color:var(--red); color:var(--red); }
+.spd-wrap { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.spd-l { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text2); }
+input[type=range] { -webkit-appearance:none; height:3px; background:var(--border2); border-radius:2px; cursor:pointer; outline:none; width:80px; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; background:var(--accent); border-radius:50%; }
+.ep-inf { display:flex; align-items:center; gap:8px; }
+.ep-l { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text2); }
+.ep-v { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--white); font-weight:600; }
+.ep-bar { width:64px; height:4px; background:var(--border); border-radius:2px; }
+.ep-fill { height:4px; background:linear-gradient(90deg,var(--accent),var(--a2)); border-radius:2px; width:0%; transition:width 0.3s; }
+
+/* ── RIGHT PANEL ── */
+#right { background:var(--panel); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; transition:background 0.3s,border-color 0.3s; }
+.mgrid { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); }
+.mc { background:var(--panel); padding:11px 13px; }
+.mc-l { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text2); margin-bottom:4px; }
+.mc-v { font-family:'Rajdhani',sans-serif; font-size:22px; font-weight:700; line-height:1; }
+.mc-s { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text2); margin-top:2px; }
+.mblock { padding:11px 13px; border-bottom:1px solid var(--border); }
+.mb-l { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text2); margin-bottom:7px; }
+canvas.mini { width:100%; height:72px; display:block; }
+
+/* Log */
+#elog { flex:1; overflow-y:auto; padding:7px; }
+#elog::-webkit-scrollbar { width:3px; }
+#elog::-webkit-scrollbar-thumb { background:var(--border2); }
+.le {
+  font-family:'Share Tech Mono',monospace; font-size:10px; padding:4px 8px;
+  border-left:2px solid var(--border); margin-bottom:3px; line-height:1.5;
+  color:var(--text); opacity:0; animation:fi 0.3s forwards;
+}
+@keyframes fi { to { opacity:1 } }
+.lt { color:var(--text2); }
+.li { border-color:var(--accent); }
+.la { border-color:var(--a2); }
+.ld { border-color:var(--a3); }
+.lc { border-color:var(--purple); }
+
+/* Ep history */
+#ephis { padding:9px 11px; border-top:1px solid var(--border); }
+.eh-t { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--text2); margin-bottom:5px; }
+#ehc { width:100%; height:52px; display:block; }
+
+/* Terrain legend */
+#tleg { padding:8px 11px; border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; gap:5px; }
+.tpill {
+  font-family:'Share Tech Mono',monospace; font-size:9px; padding:2px 7px;
+  border-radius:3px; display:flex; align-items:center; gap:4px; border:1px solid;
+}
+
+/* Overlay */
+#overlay {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; z-index:20;
+  background:rgba(8,11,15,0.86); backdrop-filter:blur(8px);
+}
+[data-theme="light"] #overlay { background:rgba(240,242,244,0.88); }
+#overlay h2 {
+  font-family:'Rajdhani',sans-serif; font-size:32px; font-weight:700;
+  color:var(--accent); letter-spacing:1px; margin-bottom:10px;
+}
+#overlay p { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text2); margin-bottom:4px; }
+
+/* Tooltip */
+#tip {
+  position:fixed; pointer-events:none; z-index:999;
+  background:var(--panel); border:1px solid var(--border2);
+  padding:9px 13px; font-family:'Share Tech Mono',monospace; font-size:10px;
+  line-height:1.9; border-radius:4px; display:none; max-width:210px;
+  box-shadow:var(--shadow); color:var(--text);
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- HEADER -->
+<header>
+  <div>
+    <div class="logo">Area Disaster Response</div>
+    <div class="logo-sub">Hex Terrain · MDP Simulation · NSF REU #2150390</div>
+  </div>
+  <div class="badge">LIVE SIM</div>
+  <div class="hstats">
+    <div class="hs">EP <b id="hep">1</b></div>
+    <div class="hs">STEP <b id="hstep">0</b></div>
+    <div class="hs">|S| <b id="hstate">—</b></div>
+    <div class="hs">TASKS <b id="htasks">0/0</b></div>
+    <div class="hs">γ=<b>0.95</b></div>
+    <button class="theme-btn" id="theme-toggle">
+      <span class="theme-icon" id="theme-icon">☀</span>
+      <span id="theme-label">Light</span>
+    </button>
+  </div>
+</header>
+
+<div id="main">
+
+  <!-- LEFT -->
+  <div id="left">
+    <div class="ptitle">// MDP Tuple</div>
+    <div id="mdp-box">
+      <div class="mdp-row"><span class="mdp-k">S — State</span><span class="mdp-v" id="mdp-s">Hex grid + agents + tasks</span></div>
+      <div class="mdp-row"><span class="mdp-k">A — Action</span><span class="mdp-v">6-dir + wait</span></div>
+      <div class="mdp-row"><span class="mdp-k">R — Reward</span><span class="mdp-v" id="mdp-r">—</span></div>
+      <div class="mdp-row"><span class="mdp-k">π — Policy</span><span class="mdp-v" id="mdp-pi">LP + FE-MADDPG</span></div>
+      <div class="mdp-row"><span class="mdp-k">γ — Discount</span><span class="mdp-v">0.95</span></div>
+      <div class="mdp-eq">r_t^i = (ε + |e_t^i / ē_t − 1|) / ē_t</div>
+    </div>
+
+    <div class="ptitle">// Robots</div>
+    <div id="roster"></div>
+
+    <div id="algo">
+      <div class="algo-hd">// Policy π</div>
+      <button class="abtn" data-algo="greedy">GREEDY <span>no fairness</span></button>
+      <button class="abtn" data-algo="cbs">CBS ONLY <span>conflict-free</span></button>
+      <button class="abtn on" data-algo="lp_fe">LP + FE-MADDPG <span>★ proposed</span></button>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div id="center">
+    <div id="cw">
+      <canvas id="gc"></canvas>
+      <div id="overlay">
+        <h2>Area Disaster Response</h2>
+        <p>Hexagonal terrain · 6-directional MDP · Role-based robots</p>
+        <p>Trung Hieu Pham · Dr. Adam Thorpe · Dr. Ufuk Topcu</p>
+        <p style="margin-top:10px">Press PLAY or SPACE to begin</p>
+      </div>
+    </div>
+    <div id="ctrl">
+      <button class="cbtn pri" id="bplay">▶ PLAY</button>
+      <button class="cbtn" id="bstep">⏭ STEP</button>
+      <button class="cbtn" id="bpause" style="display:none">⏸ PAUSE</button>
+      <button class="cbtn dng" id="breset">↺ RESET</button>
+      <button class="cbtn" id="bnew">⊕ NEW EP</button>
+      <div class="ep-inf">
+        <div class="ep-l">EPISODE</div>
+        <div class="ep-v" id="cep">1</div>
+        <div class="ep-bar"><div class="ep-fill" id="epbar"></div></div>
+      </div>
+      <div class="spd-wrap">
+        <div class="spd-l">SPEED</div>
+        <input type="range" id="spd" min="1" max="12" value="5">
+        <div class="spd-l" id="spdv">5×</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div id="right">
+    <div class="ptitle">// Metrics</div>
+    <div class="mgrid">
+      <div class="mc"><div class="mc-l">GINI INDEX</div><div class="mc-v" style="color:var(--accent)" id="m-g">—</div><div class="mc-s">↓ = fairer</div></div>
+      <div class="mc"><div class="mc-l">VARIANCE</div><div class="mc-v" style="color:var(--a2)" id="m-v">—</div><div class="mc-s">load spread</div></div>
+      <div class="mc"><div class="mc-l">MAKESPAN</div><div class="mc-v" style="color:var(--a3)" id="m-m">—</div><div class="mc-s">steps</div></div>
+      <div class="mc"><div class="mc-l">COLLABS</div><div class="mc-v" style="color:var(--purple)" id="m-c">0</div><div class="mc-s">joint ops</div></div>
+    </div>
+    <div class="mblock">
+      <div class="mb-l">// Fairness Reward / Agent</div>
+      <canvas class="mini" id="ch-fair" height="72"></canvas>
+    </div>
+    <div class="mblock">
+      <div class="mb-l">// Task Load / Agent</div>
+      <canvas class="mini" id="ch-load" height="72"></canvas>
+    </div>
+    <div id="tleg"></div>
+    <div class="ptitle">// Event Log</div>
+    <div id="elog"></div>
+    <div id="ephis">
+      <div class="eh-t">// Episode History — Gini</div>
+      <canvas id="ehc" height="52"></canvas>
+    </div>
+  </div>
+
+</div>
+</div>
+<div id="tip"></div>
+
+<script>
+/* ================================================================
+   Area Disaster Response — Hex Terrain Simulation
+   MDP: (S, A, R, π, γ) · Hex grid · Role-based robots
+   Fair task allocation: LP + FE-MADDPG
+   Pathfinding: A* on hex grid + CBS conflict resolution
+   ================================================================ */
+
+// ── SEEDED RNG ───────────────────────────────────────────
+class RNG {
+  constructor(s=42){this.s=s>>>0}
+  next(){this.s=(Math.imul(1664525,this.s)+1013904223)>>>0;return this.s/4294967296}
+  int(a,b){return a+Math.floor(this.next()*(b-a))}
+  choose(a){return a[this.int(0,a.length)]}
+}
+
+// ── HEX GRID GEOMETRY ────────────────────────────────────
+// Flat-top hexagons, offset coords (even-q)
+// Hex size = distance from center to vertex
+const HEX_SIZE = 30;  // px, vertex-to-center
+const COLS = 14;
+const ROWS = 11;
+
+// Flat-top hex: center pixel from col/row
+function hexCenter(col, row, ox, oy) {
+  const x = ox + HEX_SIZE * 3/2 * col;
+  const y = oy + HEX_SIZE * Math.sqrt(3) * (row + (col % 2) * 0.5);
+  return [x, y];
+}
+
+// Draw a flat-top hexagon
+function drawHex(ctx, cx, cy, size, fill, stroke, lw=1) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const angle = Math.PI / 180 * (60 * i); // flat-top: 0°,60°,120°...
+    const px = cx + size * Math.cos(angle);
+    const py = cy + size * Math.sin(angle);
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+}
+
+// Flat-top hex neighbors (6 directions, offset coords)
+function hexNeighbors(col, row) {
+  const even = col % 2 === 0;
+  const dirs = even
+    ? [[1,0],[1,-1],[0,-1],[-1,-1],[-1,0],[0,1]]   // even col
+    : [[1,1],[1,0], [0,-1],[-1,0], [-1,1],[0,1]];  // odd col
+  return dirs.map(([dc,dr]) => [col+dc, row+dr])
+             .filter(([c,r]) => c>=0&&c<COLS&&r>=0&&r<ROWS);
+}
+
+// Hex distance (cube coords)
+function hexDist(c1,r1,c2,r2) {
+  // Convert offset to cube
+  function toCube(c,r){
+    const x=c, z=r-(c-(c&1))/2, y=-x-z;
+    return[x,y,z];
+  }
+  const [x1,y1,z1]=toCube(c1,r1);
+  const [x2,y2,z2]=toCube(c2,r2);
+  return Math.max(Math.abs(x1-x2),Math.abs(y1-y2),Math.abs(z1-z2));
+}
+
+// ── TERRAIN ──────────────────────────────────────────────
+const T = {
+  CLEAR:  {id:0,name:'Clear',   cost:1.0, passable:true,  dc:'#0d1c28','lc':'#e8f4f8'},
+  RUBBLE: {id:1,name:'Rubble',  cost:2.5, passable:true,  dc:'#1a160c','lc':'#f5f0e8'},
+  WATER:  {id:2,name:'Water',   cost:3.0, passable:true,  dc:'#061828','lc':'#daeeff'},
+  WALL:   {id:3,name:'Wall',    cost:999, passable:false, dc:'#111111','lc':'#cccccc'},
+  FIRE:   {id:4,name:'Fire',    cost:2.0, passable:true,  dc:'#1a0800','lc':'#ffe8e0'},
+};
+
+function terrainColor(t, isDark) {
+  return isDark ? t.dc : t.lc;
+}
+
+// ── ROLES ────────────────────────────────────────────────
+const ROLES = [
+  {name:'Scout',    icon:'🔍', color:'#4fc3f7', lcolor:'#0277bd', desc:'Recon & detection',  cap:['detect']},
+  {name:'Medic',    icon:'🏥', color:'#ff7043', lcolor:'#bf360c', desc:'Triage & care',       cap:['heal','extract']},
+  {name:'Engineer', icon:'⚙️',  color:'#ffd740', lcolor:'#e65100', desc:'Obstacle clearing',  cap:['clear','build']},
+  {name:'Carrier',  icon:'🚚', color:'#69f0ae', lcolor:'#1b5e20', desc:'Transport & rescue',  cap:['carry','extract']},
+  {name:'FireBot',  icon:'🔥', color:'#ff5252', lcolor:'#b71c1c', desc:'Fire suppression',    cap:['suppress','cool']},
+];
+
+const MISSIONS_T = [
+  {name:'Survivor',   icon:'🧑', color:'#ff7043', lcolor:'#bf360c', requires:['detect','extract','heal'], priority:3, duration:10},
+  {name:'Fire Source',icon:'🔥', color:'#ff5252', lcolor:'#b71c1c', requires:['suppress'],                priority:2, duration:7},
+  {name:'Debris',     icon:'🪨', color:'#90a4ae', lcolor:'#455a64', requires:['clear'],                   priority:1, duration:6},
+  {name:'Flood Zone', icon:'💧', color:'#4fc3f7', lcolor:'#0277bd', requires:['carry','extract'],          priority:2, duration:8},
+  {name:'Recon',      icon:'📡', color:'#ce93d8', lcolor:'#6a1b9a', requires:['detect'],                   priority:0, duration:4},
+];
+
+const GAMMA   = 0.95;
+const EPSILON = 1e-7;
+
+// ── STATE ────────────────────────────────────────────────
+let rng, hexGrid=[], robots=[], missions=[], ep=1, step=0;
+let algorithm='lp_fe', collabs=0, running=false, tid=null;
+let epHistory=[], fairHist={}, isDark=true;
+
+const canvas = document.getElementById('gc');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('cw');
+
+function resize() { canvas.width=wrap.clientWidth; canvas.height=wrap.clientHeight; render(); }
+window.addEventListener('resize', resize);
+
+// ── UTILS ────────────────────────────────────────────────
+function gini(v){
+  if(!v.length)return 0;
+  const a=[...v].sort((x,y)=>x-y),n=a.length,s=a.reduce((x,y)=>x+y,0);
+  if(!s)return 0;
+  let num=0;for(let i=0;i<n;i++)num+=(2*(i+1)-n-1)*a[i];
+  return Math.max(0,num/(n*s));
+}
+function variance(v){
+  if(!v.length)return 0;
+  const m=v.reduce((a,b)=>a+b)/v.length;
+  return v.reduce((a,b)=>a+(b-m)**2,0)/v.length;
+}
+function fairnessReward(perfs){
+  const eb=perfs.reduce((a,b)=>a+b,0)/perfs.length||EPSILON;
+  return perfs.map(e=>(EPSILON+Math.abs(e/eb-1))/eb);
+}
+function stateSize(){
+  return COLS*ROWS*robots.length*Math.pow(2,missions.length);
+}
+function roleColor(role){
+  return isDark ? role.color : role.lcolor;
+}
+function missionColor(mt){
+  return isDark ? mt.color : mt.lcolor;
+}
+
+// ── HEX A* ───────────────────────────────────────────────
+function astar(robot, startCol, startRow, goalCol, goalRow, constraints=new Set()){
+  const key=(c,r,t)=>`${c},${r},${t}`;
+  const h=(c,r)=>hexDist(c,r,goalCol,goalRow);
+  const open=[{f:h(startCol,startRow),g:0,c:startCol,r:startRow,t:0,path:[[startCol,startRow]]}];
+  const vis=new Set();
+
+  while(open.length){
+    open.sort((a,b)=>a.f-b.f);
+    const {g,c,r,t,path}=open.shift();
+    const k=key(c,r,t);
+    if(vis.has(k))continue;
+    vis.add(k);
+    if(c===goalCol&&r===goalRow)return path;
+    if(t>150)continue;
+
+    for(const [nc,nr] of hexNeighbors(c,r)){
+      if(!hexGrid[nr]||!hexGrid[nr][nc])continue;
+      const terrain=hexGrid[nr][nc];
+      if(!terrain.passable)continue;
+      const ck=`${nc},${nr},${t+1}`;
+      if(vis.has(ck)||constraints.has(ck))continue;
+      const ng=g+terrain.cost;
+      open.push({f:ng+h(nc,nr),g:ng,c:nc,r:nr,t:t+1,path:[...path,[nc,nr]]});
+    }
+    // Wait action
+    const wk=key(c,r,t+1);
+    if(!vis.has(wk)&&!constraints.has(wk)){
+      open.push({f:g+1+h(c,r),g:g+1,c,r,t:t+1,path:[...path,[c,r]]});
+    }
+  }
+  return[[startCol,startRow]];
+}
+
+// ── CBS ──────────────────────────────────────────────────
+function detectConflict(paths){
+  const maxT=Math.max(...Object.values(paths).map(p=>p.length));
+  for(let t=0;t<maxT;t++){
+    const pm={};
+    for(const [id,path] of Object.entries(paths)){
+      const pos=path[Math.min(t,path.length-1)];
+      const k=`${pos[0]},${pos[1]}`;
+      if(pm[k]!==undefined)return{a:pm[k],b:id,pos,t};
+      pm[k]=id;
+    }
+  }
+  return null;
+}
+
+function cbsPlan(sgoals){
+  const initP={};
+  for(const [id,{sc,sr,gc,gr,robot}] of Object.entries(sgoals)){
+    initP[id]=astar(robot,sc,sr,gc,gr);
+  }
+  const maxL=Math.max(...Object.values(initP).map(p=>p.length));
+  for(const id in initP)while(initP[id].length<maxL)initP[id].push(initP[id].at(-1));
+
+  let open=[{cost:Object.values(initP).reduce((a,p)=>a+p.length,0),cons:{},paths:initP}];
+  for(let i=0;i<60;i++){
+    open.sort((a,b)=>a.cost-b.cost);
+    const node=open.shift();
+    const cf=detectConflict(node.paths);
+    if(!cf)return node.paths;
+    for(const aid of[cf.a,cf.b]){
+      const nc={...node.cons,[aid]:new Set(node.cons[aid]||[])};
+      nc[aid].add(`${cf.pos[0]},${cf.pos[1]},${cf.t}`);
+      const sg=sgoals[aid];
+      const np=astar(sg.robot,sg.sc,sg.sr,sg.gc,sg.gr,nc[aid]);
+      const newPaths={...node.paths,[aid]:np};
+      const ml=Math.max(...Object.values(newPaths).map(p=>p.length));
+      for(const id in newPaths)while(newPaths[id].length<ml)newPaths[id].push(newPaths[id].at(-1));
+      open.push({cost:Object.values(newPaths).reduce((a,p)=>a+p.length,0),cons:nc,paths:newPaths});
+    }
+  }
+  return open[0]?.paths||initP;
+}
+
+// ── LP + FE-MADDPG ALLOCATION ────────────────────────────
+function lpAllocate(robots,missions){
+  const assign=Object.fromEntries(robots.map(r=>[r.id,[]]));
+  const loads=Object.fromEntries(robots.map(r=>[r.id,0]));
+  const lambda=4;
+  const sorted=[...missions].sort((a,b)=>b.type.priority-a.type.priority);
+  for(const ms of sorted){
+    const capable=robots.filter(r=>ms.type.requires.some(cap=>r.role.cap.includes(cap)));
+    const pool=capable.length?capable:robots;
+    const best=pool.reduce((best,r)=>{
+      const c=hexDist(r.col,r.row,ms.col,ms.row)*hexGrid[ms.row][ms.col].cost+lambda*loads[r.id];
+      const bc=hexDist(best.col,best.row,ms.col,ms.row)*hexGrid[ms.row][ms.col].cost+lambda*loads[best.id];
+      return c<bc?r:best;
+    });
+    assign[best.id].push(ms);
+    loads[best.id]++;
+  }
+  return assign;
+}
+function greedyAllocate(robots,missions){
+  const assign=Object.fromEntries(robots.map(r=>[r.id,[]]));
+  for(const ms of missions){
+    const best=robots.reduce((a,b)=>hexDist(a.col,a.row,ms.col,ms.row)<=hexDist(b.col,b.row,ms.col,ms.row)?a:b);
+    assign[best.id].push(ms);
+  }
+  return assign;
+}
+function feAdjust(assign,robots,n=15){
+  const a=JSON.parse(JSON.stringify(assign));
+  for(let i=0;i<n;i++){
+    const loads=robots.map(r=>a[r.id].length);
+    const mx=loads.indexOf(Math.max(...loads));
+    const mn=loads.indexOf(Math.min(...loads));
+    if(loads[mx]-loads[mn]<=1)break;
+    if(a[robots[mx].id].length)a[robots[mn].id].push(a[robots[mx].id].pop());
+  }
+  return a;
+}
+
+// ── WORLD BUILD ──────────────────────────────────────────
+function buildWorld(seed){
+  rng=new RNG(seed);
+  hexGrid=[];robots=[];missions=[];
+  step=0;collabs=0;fairHist={};
+
+  // Build hex terrain
+  for(let r=0;r<ROWS;r++){
+    hexGrid[r]=[];
+    for(let c=0;c<COLS;c++){
+      const n=rng.next();
+      let t;
+      if(n<0.52)      t={...T.CLEAR};
+      else if(n<0.67) t={...T.RUBBLE};
+      else if(n<0.77) t={...T.WATER};
+      else if(n<0.90) t={...T.WALL};
+      else            t={...T.FIRE};
+      // Border walls
+      if(r===0||r===ROWS-1||c===0||c===COLS-1) t={...T.WALL};
+      hexGrid[r][c]=t;
+    }
+  }
+  // Carve clear path
+  const mid=Math.floor(ROWS/2);
+  for(let c=1;c<COLS-1;c++) if(!hexGrid[mid][c].passable) hexGrid[mid][c]={...T.CLEAR};
+
+  const occupied=new Set();
+  function place(types){
+    let c,r,tries=0;
+    do{c=rng.int(1,COLS-1);r=rng.int(1,ROWS-1);tries++;}
+    while((occupied.has(`${c},${r}`)||!types.some(t=>hexGrid[r][c].id===t.id))&&tries<300);
+    if(tries>=300){c=Math.floor(COLS/2);r=mid;}
+    occupied.add(`${c},${r}`);
+    return[c,r];
+  }
+
+  // Robots
+  for(let i=0;i<5;i++){
+    const[c,r]=place([T.CLEAR,T.RUBBLE]);
+    robots.push({
+      id:i,col:c,row:r,startCol:c,startRow:r,
+      role:ROLES[i],status:'idle',
+      path:[],pathIdx:0,missionQueue:[],currentMission:null,
+      tasksCompleted:0,distTraveled:0,collaborating:null,
+      fairRewards:[],discountedReturn:0,
+    });
+    fairHist[i]=[];
+  }
+
+  // Missions
+  for(let i=0;i<10;i++){
+    const mt=MISSIONS_T[i%MISSIONS_T.length];
+    const[c,r]=place([T.CLEAR,T.RUBBLE,T.FIRE,T.WATER]);
+    missions.push({id:i,col:c,row:r,type:mt,status:'pending',assignedTo:[],progress:0});
+  }
+
+  allocAndPlan();
+  updateUI();
+  buildTerrainLegend();
+  document.getElementById('htasks').textContent=`0/${missions.length}`;
+  document.getElementById('hstate').textContent=stateSize().toLocaleString();
+  document.getElementById('cep').textContent=ep;
+  log('info',`World built — seed ${seed} | hex ${COLS}×${ROWS} | |S|=${stateSize().toLocaleString()}`);
+}
+
+function allocAndPlan(){
+  const pending=missions.filter(m=>m.status==='pending');
+  let assign;
+  if(algorithm==='greedy') assign=greedyAllocate(robots,pending);
+  else{ assign=lpAllocate(robots,pending); if(algorithm==='lp_fe') assign=feAdjust(assign,robots); }
+  document.getElementById('mdp-pi').textContent=
+    {greedy:'Greedy',cbs:'CBS Only',lp_fe:'LP + FE-MADDPG'}[algorithm];
+
+  const sgoals={};
+  for(const robot of robots){
+    const ms=assign[robot.id]||[];
+    robot.missionQueue=[...ms];
+    if(ms.length){
+      sgoals[robot.id]={sc:robot.col,sr:robot.row,gc:ms[0].col,gr:ms[0].row,robot};
+      robot.status='moving';
+    }
+  }
+  if(algorithm!=='greedy'){
+    const paths=cbsPlan(sgoals);
+    for(const robot of robots){
+      if(paths[robot.id]){robot.path=paths[robot.id];robot.pathIdx=0;}
+    }
+  } else {
+    for(const robot of robots){
+      if(robot.missionQueue.length){
+        robot.path=astar(robot,robot.col,robot.row,robot.missionQueue[0].col,robot.missionQueue[0].row);
+        robot.pathIdx=0;
+      }
+    }
+  }
+}
+
+// ── MDP STEP ─────────────────────────────────────────────
+function mdpStep(){
+  step++;
+  document.getElementById('hstep').textContent=step;
+
+  const perfs=robots.map(r=>{
+    if(r.currentMission)return 1/(hexDist(r.col,r.row,r.currentMission.col,r.currentMission.row)+EPSILON);
+    if(r.missionQueue.length)return 1/(hexDist(r.col,r.row,r.missionQueue[0].col,r.missionQueue[0].row)+EPSILON);
+    return 0.1;
+  });
+  const fw=fairnessReward(perfs);
+  fw.forEach((f,i)=>{
+    robots[i].fairRewards.push(f);
+    fairHist[i].push(f);
+    robots[i].discountedReturn=f+GAMMA*robots[i].discountedReturn;
+  });
+  document.getElementById('mdp-r').textContent=(fw.reduce((a,b)=>a+b)/fw.length).toFixed(4);
+
+  for(const r of robots){
+    if(r.status==='done')continue;
+    if(r.status==='moving'){
+      if(r.pathIdx<r.path.length-1){
+        r.pathIdx++;
+        const[nc,nr]=r.path[r.pathIdx];
+        r.distTraveled+=hexDist(r.col,r.row,nc,nr);
+        r.col=nc;r.row=nr;
+      }
+      if(r.missionQueue.length){
+        const tgt=r.missionQueue[0];
+        if(r.col===tgt.col&&r.row===tgt.row){
+          r.currentMission=tgt;r.status='working';
+          if(!tgt.assignedTo.includes(r.id))tgt.assignedTo.push(r.id);
+          tgt.status='active';
+          log('action',`${r.role.icon} R${r.id} ${r.role.name} → ${tgt.type.icon} ${tgt.type.name}`);
+        }
+      }
+    }
+    if(r.status==='working'&&r.currentMission){
+      const ms=r.currentMission;
+      const helpers=robots.filter(x=>x.id!==r.id&&x.currentMission===ms&&x.status==='working');
+      ms.progress+=1+helpers.length*0.6;
+      if(ms.progress>=ms.type.duration*10){
+        ms.status='done';r.tasksCompleted++;r.status='idle';
+        r.currentMission=null;r.missionQueue.shift();
+        log('done',`✓ R${r.id} completed ${ms.type.icon}${ms.type.name}${helpers.length?` [+${helpers.length} collab]`:''}`);
+        if(r.missionQueue.length){
+          r.path=astar(r,r.col,r.row,r.missionQueue[0].col,r.missionQueue[0].row);
+          r.pathIdx=0;r.status='moving';
+        }
+      }
+    }
+  }
+
+  // Collaborations
+  for(let i=0;i<robots.length;i++){
+    for(let j=i+1;j<robots.length;j++){
+      const ri=robots[i],rj=robots[j];
+      if(hexDist(ri.col,ri.row,rj.col,rj.row)<=1&&ri.status==='working'&&rj.status==='working'){
+        if(ri.currentMission&&rj.currentMission){
+          const sameOrRelated=ri.currentMission===rj.currentMission||
+            ri.currentMission.type.requires.some(x=>rj.role.cap.includes(x));
+          if(sameOrRelated&&ri.collaborating!==rj.id){
+            ri.collaborating=rj.id;rj.collaborating=ri.id;collabs++;
+            log('collab',`⟐ COLLAB: ${ri.role.icon}${ri.role.name} + ${rj.role.icon}${rj.role.name}`);
+          }
+        }
+      } else {
+        if(ri.collaborating===rj.id){ri.collaborating=null;rj.collaborating=null;}
+      }
+    }
+  }
+
+  const done=missions.filter(m=>m.status==='done').length;
+  document.getElementById('htasks').textContent=`${done}/${missions.length}`;
+  document.getElementById('epbar').style.width=`${done/missions.length*100}%`;
+  updateUI();render();
+  if(done>=missions.length)endEp();
+}
+
+function endEp(){
+  running=false;clearTimeout(tid);
+  document.getElementById('bplay').style.display='inline-flex';
+  document.getElementById('bpause').style.display='none';
+  const loads=robots.map(r=>r.tasksCompleted);
+  const g=gini(loads);
+  epHistory.push({ep,gini:g,makespan:step,collabs});
+  log('done',`▣ EP ${ep} DONE — steps:${step} gini:${g.toFixed(4)} collabs:${collabs}`);
+  updateEpHistory();
+  const ov=document.getElementById('overlay');
+  ov.style.display='flex';
+  ov.innerHTML=`<h2>Episode ${ep} Complete</h2>
+    <p>Makespan: ${step} steps · Gini: ${g.toFixed(4)} · Collabs: ${collabs}</p>
+    <p style="margin-top:8px">NEW EPISODE to continue · RESET to replay</p>`;
+}
+
+// ── RENDER ───────────────────────────────────────────────
+function render(){
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // Compute grid origin to center it
+  const gridW=(COLS-1)*HEX_SIZE*1.5+HEX_SIZE*2;
+  const gridH=(ROWS-0.5)*HEX_SIZE*Math.sqrt(3);
+  const ox=Math.max(10,(W-gridW)/2);
+  const oy=Math.max(10,(H-gridH)/2);
+
+  // ── Hex terrain ────────────────────────────────────
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const t=hexGrid[r][c];
+      const[cx,cy]=hexCenter(c,r,ox,oy);
+      const dark=isDark;
+      const fill=terrainColor(t,dark);
+
+      drawHex(ctx,cx,cy,HEX_SIZE-1,fill,
+        dark?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.09)',0.8);
+
+      // Terrain details
+      if(t.id===T.RUBBLE.id){
+        ctx.fillStyle=dark?'rgba(180,140,60,0.12)':'rgba(140,100,40,0.15)';
+        for(let i=0;i<3;i++){
+          const bx=cx-7+i*7+rng.next()*4-2;
+          const by=cy-4+i*3+rng.next()*4-2;
+          ctx.fillRect(bx,by,5+rng.next()*5,3+rng.next()*3);
+        }
+      }
+      if(t.id===T.WATER.id){
+        const wt=Date.now()/1000;
+        ctx.strokeStyle=dark?`rgba(79,195,247,${0.15+0.07*Math.sin(wt+c+r)})`
+                            :`rgba(2,119,189,${0.2+0.08*Math.sin(wt+c+r)})`;
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.moveTo(cx-9,cy+3*Math.sin(wt+c));
+        ctx.bezierCurveTo(cx-3,cy+2*Math.sin(wt+c+1),cx+3,cy+2*Math.sin(wt+c+2),cx+9,cy+3*Math.sin(wt+c+3));
+        ctx.stroke();
+      }
+      if(t.id===T.FIRE.id){
+        const ft=Date.now()/250;
+        const fa=dark?(0.18+0.1*Math.sin(ft+c*2+r)):(0.25+0.1*Math.sin(ft+c*2+r));
+        ctx.fillStyle=`rgba(255,${80+Math.floor(40*Math.sin(ft))},0,${fa})`;
+        drawHex(ctx,cx,cy,HEX_SIZE*0.65,`rgba(255,100,0,${fa})`,null);
+      }
+      if(!t.passable){
+        ctx.strokeStyle=dark?'rgba(100,100,100,0.3)':'rgba(80,80,80,0.25)';
+        ctx.lineWidth=0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx-8,cy-8);ctx.lineTo(cx+8,cy+8);
+        ctx.moveTo(cx+8,cy-8);ctx.lineTo(cx-8,cy+8);
+        ctx.stroke();
+      }
+
+      // Terrain cost label (passable, costly cells)
+      if(t.passable&&t.cost>1){
+        ctx.fillStyle=dark?'rgba(255,255,255,0.2)':'rgba(0,0,0,0.2)';
+        ctx.font='7px Share Tech Mono';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(`×${t.cost}`,cx,cy+HEX_SIZE*0.6);
+      }
+    }
+  }
+
+  // ── Robot paths ──────────────────────────────────
+  robots.forEach(r=>{
+    if(r.path.length<2)return;
+    const rc=roleColor(r.role);
+    ctx.strokeStyle=rc+'55';ctx.lineWidth=2;ctx.setLineDash([3,5]);
+    ctx.beginPath();
+    r.path.forEach(([pc,pr],i)=>{
+      const[x,y]=hexCenter(pc,pr,ox,oy);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();ctx.setLineDash([]);
+  });
+
+  // ── Missions ─────────────────────────────────────
+  missions.filter(m=>m.status!=='done').forEach(ms=>{
+    const[cx,cy]=hexCenter(ms.col,ms.row,ox,oy);
+    const pct=ms.progress/(ms.type.duration*10);
+    const mc=missionColor(ms.type);
+
+    if(ms.status==='active'){
+      const t=Date.now()/500;
+      const a=0.12+0.07*Math.sin(t);
+      drawHex(ctx,cx,cy,HEX_SIZE*0.92,null,mc+Math.round(a*255).toString(16).padStart(2,'0'),2.5);
+    }
+    drawHex(ctx,cx,cy,HEX_SIZE*0.72,mc+'33',mc+'bb',1.5);
+
+    // Progress arc
+    if(pct>0){
+      ctx.beginPath();
+      ctx.arc(cx,cy,HEX_SIZE*0.48,-Math.PI/2,-Math.PI/2+pct*Math.PI*2);
+      ctx.strokeStyle=mc;ctx.lineWidth=3;ctx.stroke();
+    }
+
+    // Icon
+    ctx.font=`${HEX_SIZE*0.55}px serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(ms.type.icon,cx,cy-1);
+
+    // Priority pips
+    for(let p=0;p<ms.type.priority;p++){
+      ctx.beginPath();
+      ctx.arc(cx-4+p*5,cy+HEX_SIZE*0.55,2.5,0,Math.PI*2);
+      ctx.fillStyle=mc;ctx.fill();
+    }
+  });
+
+  // Done missions
+  missions.filter(m=>m.status==='done').forEach(ms=>{
+    const[cx,cy]=hexCenter(ms.col,ms.row,ox,oy);
+    ctx.globalAlpha=0.22;
+    drawHex(ctx,cx,cy,HEX_SIZE*0.6,isDark?'#69f0ae22':'#2e7d3222',isDark?'#69f0ae':'#2e7d32',1);
+    ctx.fillStyle=isDark?'#69f0ae':'#2e7d32';
+    ctx.font=`${HEX_SIZE*0.5}px serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('✓',cx,cy);
+    ctx.globalAlpha=1;
+  });
+
+  // ── Collaboration beams ───────────────────────────
+  robots.forEach(r=>{
+    if(r.collaborating===null)return;
+    const partner=robots.find(x=>x.id===r.collaborating);
+    if(!partner)return;
+    const t=Date.now()/350;
+    const a=0.25+0.2*Math.sin(t);
+    const[x1,y1]=hexCenter(r.col,r.row,ox,oy);
+    const[x2,y2]=hexCenter(partner.col,partner.row,ox,oy);
+    ctx.strokeStyle=isDark?`rgba(206,147,216,${a})`:`rgba(106,27,154,${a})`;
+    ctx.lineWidth=2.5;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // ── Robots ───────────────────────────────────────
+  robots.forEach(r=>{
+    const[cx,cy]=hexCenter(r.col,r.row,ox,oy);
+    const sz=HEX_SIZE*0.38;
+    const rc=roleColor(r.role);
+
+    // Glow
+    const grd=ctx.createRadialGradient(cx,cy,0,cx,cy,sz*2.5);
+    grd.addColorStop(0,rc+(r.status==='working'?'55':'22'));
+    grd.addColorStop(1,'transparent');
+    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(cx,cy,sz*2.5,0,Math.PI*2);ctx.fill();
+
+    // Body hex
+    drawHex(ctx,cx,cy,sz,
+      r.status==='idle'?rc+'44':rc+'cc',
+      rc,1.8);
+
+    // Icon
+    ctx.font=`${sz*1.1}px serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(r.role.icon,cx,cy);
+
+    // Label
+    ctx.fillStyle=rc;ctx.font=`bold 9px Share Tech Mono`;
+    ctx.fillText(`R${r.id}`,cx,cy+sz+8);
+
+    // Status dot
+    const sc={idle:isDark?'#546e7a':'#90a4ae',moving:isDark?'#4fc3f7':'#0277bd',working:isDark?'#ff7043':'#d84315',done:isDark?'#69f0ae':'#2e7d32'}[r.status]||'#546e7a';
+    ctx.beginPath();ctx.arc(cx+sz,cy-sz,3.5,0,Math.PI*2);ctx.fillStyle=sc;ctx.fill();
+
+    // Work ring
+    if(r.currentMission){
+      const pct=r.currentMission.progress/(r.currentMission.type.duration*10);
+      ctx.strokeStyle=rc+'99';ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.arc(cx,cy,sz+5,-Math.PI/2,-Math.PI/2+pct*Math.PI*2);ctx.stroke();
+    }
+    if(r.collaborating!==null){
+      ctx.fillStyle=isDark?'#ce93d8':'#6a1b9a';
+      ctx.font='11px serif';ctx.fillText('⟐',cx+sz+2,cy-sz-2);
+    }
+  });
+
+  // Step label
+  ctx.fillStyle=isDark?'rgba(79,195,247,0.5)':'rgba(2,119,189,0.5)';
+  ctx.font='10px Share Tech Mono';ctx.textAlign='left';
+  ctx.fillText(`STEP ${step}  γ=${GAMMA}  π=${algorithm}`,ox+4,oy+gridH+14);
+}
+
+// ── UI ───────────────────────────────────────────────────
+function updateUI(){
+  const loads=robots.map(r=>r.tasksCompleted);
+  document.getElementById('m-g').textContent=gini(loads).toFixed(4);
+  document.getElementById('m-v').textContent=variance(loads).toFixed(4);
+  document.getElementById('m-m').textContent=step;
+  document.getElementById('m-c').textContent=collabs;
+
+  const roster=document.getElementById('roster');
+  roster.innerHTML='';
+  robots.forEach(r=>{
+    const ml=Math.max(...robots.map(x=>x.tasksCompleted),1);
+    const sc={idle:'s-idle',moving:'s-moving',working:'s-working',done:'s-done'}[r.status]||'s-idle';
+    const rc=roleColor(r.role);
+    const ms=r.currentMission;
+    const d=document.createElement('div');
+    d.className=`rcard ${r.status!=='idle'?'active':''}`;
+    d.innerHTML=`
+      <div class="rbar" style="background:${rc};opacity:${r.status==='idle'?0.3:1}"></div>
+      <div class="rc-top">
+        <span class="rc-icon">${r.role.icon}</span>
+        <div><div class="rc-name" style="color:${rc}">${r.role.name}</div><div class="rc-role">${r.role.desc}</div></div>
+        <span class="rc-status ${sc}">${r.status.toUpperCase()}</span>
+      </div>
+      <div class="rc-prog"><div class="rc-prog-fill" style="width:${r.tasksCompleted/ml*100}%;background:${rc}"></div></div>
+      <div class="rc-info">${ms?`${ms.type.icon} ${ms.type.name} — ${Math.round(ms.progress/ms.type.duration/10*100)}%`:r.missionQueue.length?`Queue: ${r.missionQueue.length} tasks`:'No mission'}</div>
+      <div class="rc-nums">
+        <div class="rc-n">Done <b>${r.tasksCompleted}</b></div>
+        <div class="rc-n">Dist <b>${r.distTraveled.toFixed(0)}</b></div>
+        <div class="rc-n">G_t <b>${r.discountedReturn.toFixed(2)}</b></div>
+        ${r.collaborating!==null?`<div class="rc-n" style="color:var(--purple)">⟐ R${r.collaborating}</div>`:''}
+      </div>`;
+    roster.appendChild(d);
+  });
+
+  drawFairChart();
+  drawLoadChart();
+}
+
+function drawFairChart(){
+  const c=document.getElementById('ch-fair');
+  const cx=c.getContext('2d');
+  c.width=c.offsetWidth;c.height=72;cx.clearRect(0,0,c.width,c.height);
+  const maxL=Math.max(...Object.values(fairHist).map(d=>d.length));
+  const maxV=Math.max(...Object.values(fairHist).flat())||1;
+  robots.forEach(r=>{
+    const d=fairHist[r.id]||[];if(!d.length)return;
+    cx.beginPath();cx.strokeStyle=roleColor(r.role);cx.lineWidth=1.5;cx.globalAlpha=0.85;
+    d.forEach((v,t)=>{const x=t/maxL*c.width,y=c.height-v/maxV*c.height;t===0?cx.moveTo(x,y):cx.lineTo(x,y);});
+    cx.stroke();cx.globalAlpha=1;
+  });
+}
+function drawLoadChart(){
+  const c=document.getElementById('ch-load');
+  const cx=c.getContext('2d');
+  c.width=c.offsetWidth;c.height=72;cx.clearRect(0,0,c.width,c.height);
+  const loads=robots.map(r=>r.tasksCompleted);
+  const maxV=Math.max(...loads,1);
+  const w=c.width/robots.length;
+  loads.forEach((l,i)=>{
+    const h=l/maxV*(c.height-10),rc=roleColor(ROLES[i]);
+    cx.fillStyle=rc+'55';cx.fillRect(i*w+2,c.height-h,w-4,h);
+    cx.fillStyle=rc;cx.fillRect(i*w+2,c.height-h,w-4,2);
+    cx.fillStyle=isDark?'rgba(176,190,197,0.9)':'rgba(44,62,80,0.9)';
+    cx.font='8px Share Tech Mono';cx.textAlign='center';
+    cx.fillText(l,i*w+w/2,c.height-h-3);
+  });
+}
+function updateEpHistory(){
+  const c=document.getElementById('ehc');
+  const cx=c.getContext('2d');
+  c.width=c.offsetWidth;c.height=52;cx.clearRect(0,0,c.width,c.height);
+  if(epHistory.length<2)return;
+  const n=epHistory.length,maxG=Math.max(...epHistory.map(e=>e.gini))||0.01;
+  const lineCol=isDark?'#4fc3f7':'#0277bd';
+  cx.beginPath();cx.strokeStyle=lineCol;cx.lineWidth=2;
+  epHistory.forEach((e,i)=>{const x=i/(n-1)*c.width,y=c.height-e.gini/maxG*(c.height-6)+3;i===0?cx.moveTo(x,y):cx.lineTo(x,y);});
+  cx.stroke();
+  cx.beginPath();
+  epHistory.forEach((e,i)=>{const x=i/(n-1)*c.width,y=c.height-e.gini/maxG*(c.height-6)+3;i===0?cx.moveTo(x,y):cx.lineTo(x,y);});
+  cx.lineTo(c.width,c.height);cx.lineTo(0,c.height);
+  cx.fillStyle=isDark?'rgba(79,195,247,0.08)':'rgba(2,119,189,0.08)';cx.fill();
+  epHistory.forEach((e,i)=>{
+    const x=i/(n-1)*c.width,y=c.height-e.gini/maxG*(c.height-6)+3;
+    cx.beginPath();cx.arc(x,y,2.5,0,Math.PI*2);cx.fillStyle=lineCol;cx.fill();
+  });
+}
+function buildTerrainLegend(){
+  const el=document.getElementById('tleg');el.innerHTML='';
+  const terrains=[
+    {t:T.CLEAR, dc:'#0d1c28',lc:'#daeeff', sc:'#1a3a50', slc:'#0277bd'},
+    {t:T.RUBBLE,dc:'#1a160c',lc:'#f5f0e8', sc:'#4a3a2a', slc:'#795548'},
+    {t:T.WATER, dc:'#061828',lc:'#daeeff', sc:'#0a3050', slc:'#0277bd'},
+    {t:T.WALL,  dc:'#111111',lc:'#cccccc', sc:'#282828', slc:'#90a4ae'},
+    {t:T.FIRE,  dc:'#1a0800',lc:'#ffe8e0', sc:'#3a1000', slc:'#d84315'},
+  ];
+  terrains.forEach(({t,dc,lc,sc,slc})=>{
+    const d=document.createElement('div');
+    d.className='tpill';
+    d.style.cssText=`background:${isDark?dc+'aa':lc};border-color:${isDark?sc:slc};color:${isDark?'#b0bec5':'#2c3e50'}`;
+    d.textContent=`${t.name} ${t.passable?`×${t.cost}`:'⊘'}`;
+    el.appendChild(d);
+  });
+}
+
+function log(type,msg){
+  const el=document.getElementById('elog');
+  const d=document.createElement('div');
+  d.className=`le l${type.charAt(0)}`;
+  d.innerHTML=`<span class="lt">[${String(step).padStart(4,'0')}]</span> ${msg}`;
+  el.insertBefore(d,el.firstChild);
+  if(el.children.length>60)el.removeChild(el.lastChild);
+}
+
+// ── THEME TOGGLE ─────────────────────────────────────────
+document.getElementById('theme-toggle').addEventListener('click',()=>{
+  isDark=!isDark;
+  document.documentElement.setAttribute('data-theme',isDark?'dark':'light');
+  document.getElementById('theme-icon').textContent=isDark?'☀':'☽';
+  document.getElementById('theme-label').textContent=isDark?'Light':'Dark';
+  buildTerrainLegend();
+  updateUI();
+  render();
+});
+
+// ── CONTROLS ─────────────────────────────────────────────
+function getInterval(){return Math.max(40,560-parseInt(document.getElementById('spd').value)*44);}
+
+function startSim(){
+  if(running)return;running=true;
+  document.getElementById('overlay').style.display='none';
+  document.getElementById('bplay').style.display='none';
+  document.getElementById('bpause').style.display='inline-flex';
+  const loop=()=>{if(!running)return;mdpStep();tid=setTimeout(loop,getInterval());};
+  tid=setTimeout(loop,getInterval());
+}
+function pauseSim(){
+  running=false;clearTimeout(tid);
+  document.getElementById('bplay').style.display='inline-flex';
+  document.getElementById('bpause').style.display='none';
+}
+function resetSim(){
+  pauseSim();buildWorld(ep*137+42);
+  document.getElementById('overlay').style.display='flex';
+  document.getElementById('overlay').innerHTML='<h2>Area Disaster Response</h2><p>World reset — Press PLAY</p>';
+  document.getElementById('elog').innerHTML='';render();
+}
+function newEp(){
+  pauseSim();ep++;
+  document.getElementById('epbar').style.width='0%';
+  buildWorld(ep*137+42);
+  document.getElementById('overlay').style.display='flex';
+  document.getElementById('overlay').innerHTML=`<h2>Episode ${ep}</h2><p>New terrain generated — Press PLAY</p>`;
+  document.getElementById('elog').innerHTML='';render();
+}
+
+document.getElementById('bplay').addEventListener('click',startSim);
+document.getElementById('bpause').addEventListener('click',pauseSim);
+document.getElementById('breset').addEventListener('click',resetSim);
+document.getElementById('bstep').addEventListener('click',()=>{document.getElementById('overlay').style.display='none';mdpStep();});
+document.getElementById('bnew').addEventListener('click',newEp);
+document.getElementById('spd').addEventListener('input',e=>{document.getElementById('spdv').textContent=e.target.value+'×';});
+
+document.querySelectorAll('.abtn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.abtn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');algorithm=b.dataset.algo;
+    document.getElementById('mdp-pi').textContent={greedy:'Greedy',cbs:'CBS Only',lp_fe:'LP + FE-MADDPG'}[algorithm];
+    if(!running)allocAndPlan();
+    log('info',`Policy → ${algorithm}`);
+  });
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();running?pauseSim():startSim();}
+  if(e.code==='ArrowRight')mdpStep();
+  if(e.code==='KeyR')resetSim();
+  if(e.code==='KeyN')newEp();
+  if(e.code==='KeyT'){document.getElementById('theme-toggle').click();}
+});
+
+// Tooltip
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const W=canvas.width,H=canvas.height;
+  const gridW=(COLS-1)*HEX_SIZE*1.5+HEX_SIZE*2;
+  const gridH=(ROWS-0.5)*HEX_SIZE*Math.sqrt(3);
+  const ox=Math.max(10,(W-gridW)/2),oy=Math.max(10,(H-gridH)/2);
+  const tt=document.getElementById('tip');
+
+  // Find nearest hex
+  let nearest=null,minD=HEX_SIZE*1.1;
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const[hx,hy]=hexCenter(c,r,ox,oy);
+      const d=Math.sqrt((mx-hx)**2+(my-hy)**2);
+      if(d<minD){minD=d;nearest=[c,r];}
+    }
+  }
+  if(!nearest){tt.style.display='none';return;}
+  const[col,row]=nearest;
+  const terrain=hexGrid[row][col];
+  const robot=robots.find(r=>r.col===col&&r.row===row);
+  const ms=missions.find(m=>m.col===col&&m.row===row&&m.status!=='done');
+  const rc=robot?roleColor(robot.role):null;
+  const mc=ms?missionColor(ms.type):null;
+
+  if(robot){
+    tt.innerHTML=`<b style="color:${rc}">${robot.role.icon} R${robot.id} — ${robot.role.name}</b><br>
+      Status: ${robot.status}<br>Terrain: ${terrain.name} (×${terrain.cost})<br>
+      Tasks: ${robot.tasksCompleted} | Dist: ${robot.distTraveled.toFixed(0)}<br>
+      G_t: ${robot.discountedReturn.toFixed(3)}<br>
+      Caps: [${robot.role.cap.join(', ')}]<br>
+      ${robot.collaborating!==null?`Collab → R${robot.collaborating}`:''}`;
+    tt.style.display='block';
+  } else if(ms){
+    tt.innerHTML=`<b style="color:${mc}">${ms.type.icon} ${ms.type.name}</b><br>
+      Terrain: ${terrain.name}<br>Priority: ${'★'.repeat(ms.type.priority)||'—'}<br>
+      Requires: [${ms.type.requires.join(', ')}]<br>
+      Progress: ${Math.round(ms.progress/ms.type.duration/10*100)}%<br>
+      Assigned: [${ms.assignedTo.map(id=>'R'+id).join(', ')||'none'}]`;
+    tt.style.display='block';
+  } else {
+    tt.innerHTML=`<b>${terrain.name}</b><br>Cost: ×${terrain.cost}<br>${terrain.passable?'Passable':'Impassable'}<br>Cell: (${col}, ${row})`;
+    tt.style.display='block';
+  }
+  tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY-10)+'px';
+});
+canvas.addEventListener('mouseleave',()=>document.getElementById('tip').style.display='none');
+
+// ── ANIMATION + INIT ─────────────────────────────────────
+function animLoop(){render();requestAnimationFrame(animLoop);}
+resize();
+buildWorld(179);
+render();
+animLoop();
+</script>
+</body>
+</html>
