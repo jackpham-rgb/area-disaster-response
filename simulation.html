@@ -290,7 +290,7 @@
     <div id="canvas-wrap">
       <canvas id="sim-canvas"></canvas>
       <div id="overlay">
-        <h2>SIMULATION SYSTEM READY</h2>
+        <h2>SIMULATION READY</h2>
         <p>Press PLAY to begin disaster response simulation</p>
       </div>
     </div>
@@ -1247,7 +1247,7 @@ function resetSim(){
   pauseSim();
   buildWorld(episode*100+42);
   document.getElementById('overlay').style.display='flex';
-  document.getElementById('overlay').innerHTML=`<h2>SIMULATION SYSTEM READY</h2><p>Press PLAY to begin disaster response simulation</p>`;
+  document.getElementById('overlay').innerHTML=`<h2>SIMULATION READY</h2><p>Press PLAY to begin disaster response simulation</p>`;
   document.getElementById('event-log').innerHTML='';
   render();
 }
