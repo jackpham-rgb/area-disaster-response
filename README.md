@@ -29,8 +29,6 @@ I built an interactive simulation that lets you watch the robots collaborate in 
 
  **[Launch the live simulation v2 here](https://jackpham-rgb.github.io/area-disaster-response/simulation_v2.html)**
 
- **[or even better](https://jackpham-rgb.github.io/area-disaster-response/sim3d.html)**
-
  **[View research data visualizations](https://jackpham-rgb.github.io/area-disaster-response/visualizations.html)**
 
 Or clone the repo and open either HTML file directly in your browser, no setup needed.
