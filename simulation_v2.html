@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Area Disaster Response — Hex Terrain Simulation</title>
+<title>Area Disaster Response: Hex Terrain Simulation</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 /* ── THEME VARIABLES ── */
@@ -252,7 +252,7 @@ canvas.mini { width:100%; height:72px; display:block; }
   <div class="hstats">
     <div class="hs">EP <b id="hep">1</b></div>
     <div class="hs">STEP <b id="hstep">0</b></div>
-    <div class="hs">|S| <b id="hstate">—</b></div>
+    <div class="hs">|S| <b id="hstate">–</b></div>
     <div class="hs">TASKS <b id="htasks">0/0</b></div>
     <div class="hs">γ=<b>0.95</b></div>
     <button class="theme-btn" id="theme-toggle">
@@ -268,11 +268,11 @@ canvas.mini { width:100%; height:72px; display:block; }
   <div id="left">
     <div class="ptitle">// MDP Tuple</div>
     <div id="mdp-box">
-      <div class="mdp-row"><span class="mdp-k">S — State</span><span class="mdp-v" id="mdp-s">Hex grid + agents + tasks</span></div>
-      <div class="mdp-row"><span class="mdp-k">A — Action</span><span class="mdp-v">6-dir + wait</span></div>
-      <div class="mdp-row"><span class="mdp-k">R — Reward</span><span class="mdp-v" id="mdp-r">—</span></div>
-      <div class="mdp-row"><span class="mdp-k">π — Policy</span><span class="mdp-v" id="mdp-pi">LP + FE-MADDPG</span></div>
-      <div class="mdp-row"><span class="mdp-k">γ — Discount</span><span class="mdp-v">0.95</span></div>
+      <div class="mdp-row"><span class="mdp-k">S: State</span><span class="mdp-v" id="mdp-s">Hex grid + agents + tasks</span></div>
+      <div class="mdp-row"><span class="mdp-k">A: Action</span><span class="mdp-v">6-dir + wait</span></div>
+      <div class="mdp-row"><span class="mdp-k">R: Reward</span><span class="mdp-v" id="mdp-r">–</span></div>
+      <div class="mdp-row"><span class="mdp-k">π: Policy</span><span class="mdp-v" id="mdp-pi">LP + FE-MADDPG</span></div>
+      <div class="mdp-row"><span class="mdp-k">γ: Discount</span><span class="mdp-v">0.95</span></div>
       <div class="mdp-eq">r_t^i = (ε + |e_t^i / ē_t − 1|) / ē_t</div>
     </div>
 
@@ -321,9 +321,9 @@ canvas.mini { width:100%; height:72px; display:block; }
   <div id="right">
     <div class="ptitle">// Metrics</div>
     <div class="mgrid">
-      <div class="mc"><div class="mc-l">GINI INDEX</div><div class="mc-v" style="color:var(--accent)" id="m-g">—</div><div class="mc-s">↓ = fairer</div></div>
-      <div class="mc"><div class="mc-l">VARIANCE</div><div class="mc-v" style="color:var(--a2)" id="m-v">—</div><div class="mc-s">load spread</div></div>
-      <div class="mc"><div class="mc-l">MAKESPAN</div><div class="mc-v" style="color:var(--a3)" id="m-m">—</div><div class="mc-s">steps</div></div>
+      <div class="mc"><div class="mc-l">GINI INDEX</div><div class="mc-v" style="color:var(--accent)" id="m-g">–</div><div class="mc-s">↓ = fairer</div></div>
+      <div class="mc"><div class="mc-l">VARIANCE</div><div class="mc-v" style="color:var(--a2)" id="m-v">–</div><div class="mc-s">load spread</div></div>
+      <div class="mc"><div class="mc-l">MAKESPAN</div><div class="mc-v" style="color:var(--a3)" id="m-m">–</div><div class="mc-s">steps</div></div>
       <div class="mc"><div class="mc-l">COLLABS</div><div class="mc-v" style="color:var(--purple)" id="m-c">0</div><div class="mc-s">joint ops</div></div>
     </div>
     <div class="mblock">
@@ -338,7 +338,7 @@ canvas.mini { width:100%; height:72px; display:block; }
     <div class="ptitle">// Event Log</div>
     <div id="elog"></div>
     <div id="ephis">
-      <div class="eh-t">// Episode History — Gini</div>
+      <div class="eh-t">// Episode History: Gini</div>
       <canvas id="ehc" height="52"></canvas>
     </div>
   </div>
@@ -349,7 +349,7 @@ canvas.mini { width:100%; height:72px; display:block; }
 
 <script>
 /* ================================================================
-   Area Disaster Response — Hex Terrain Simulation
+   Area Disaster Response: Hex Terrain Simulation
    MDP: (S, A, R, π, γ) · Hex grid · Role-based robots
    Fair task allocation: LP + FE-MADDPG
    Pathfinding: A* on hex grid + CBS conflict resolution
@@ -663,7 +663,7 @@ function buildWorld(seed){
   document.getElementById('htasks').textContent=`0/${missions.length}`;
   document.getElementById('hstate').textContent=stateSize().toLocaleString();
   document.getElementById('cep').textContent=ep;
-  log('info',`World built — seed ${seed} | hex ${COLS}×${ROWS} | |S|=${stateSize().toLocaleString()}`);
+  log('info',`World built, seed ${seed} | hex ${COLS}×${ROWS} | |S|=${stateSize().toLocaleString()}`);
 }
 
 function allocAndPlan(){
@@ -784,7 +784,7 @@ function endEp(){
   const loads=robots.map(r=>r.tasksCompleted);
   const g=gini(loads);
   epHistory.push({ep,gini:g,makespan:step,collabs});
-  log('done',`▣ EP ${ep} DONE — steps:${step} gini:${g.toFixed(4)} collabs:${collabs}`);
+  log('done',`▣ EP ${ep} DONE, steps:${step} gini:${g.toFixed(4)} collabs:${collabs}`);
   updateEpHistory();
   const ov=document.getElementById('overlay');
   ov.style.display='flex';
@@ -1004,7 +1004,7 @@ function updateUI(){
         <span class="rc-status ${sc}">${r.status.toUpperCase()}</span>
       </div>
       <div class="rc-prog"><div class="rc-prog-fill" style="width:${r.tasksCompleted/ml*100}%;background:${rc}"></div></div>
-      <div class="rc-info">${ms?`${ms.type.icon} ${ms.type.name} — ${Math.round(ms.progress/ms.type.duration/10*100)}%`:r.missionQueue.length?`Queue: ${r.missionQueue.length} tasks`:'No mission'}</div>
+      <div class="rc-info">${ms?`${ms.type.icon} ${ms.type.name}: ${Math.round(ms.progress/ms.type.duration/10*100)}%`:r.missionQueue.length?`Queue: ${r.missionQueue.length} tasks`:'No mission'}</div>
       <div class="rc-nums">
         <div class="rc-n">Done <b>${r.tasksCompleted}</b></div>
         <div class="rc-n">Dist <b>${r.distTraveled.toFixed(0)}</b></div>
@@ -1123,7 +1123,7 @@ function pauseSim(){
 function resetSim(){
   pauseSim();buildWorld(ep*137+42);
   document.getElementById('overlay').style.display='flex';
-  document.getElementById('overlay').innerHTML='<h2>Area Disaster Response</h2><p>World reset — Press PLAY</p>';
+  document.getElementById('overlay').innerHTML='<h2>Area Disaster Response</h2><p>World reset. Press PLAY</p>';
   document.getElementById('elog').innerHTML='';render();
 }
 function newEp(){
@@ -1131,7 +1131,7 @@ function newEp(){
   document.getElementById('epbar').style.width='0%';
   buildWorld(ep*137+42);
   document.getElementById('overlay').style.display='flex';
-  document.getElementById('overlay').innerHTML=`<h2>Episode ${ep}</h2><p>New terrain generated — Press PLAY</p>`;
+  document.getElementById('overlay').innerHTML=`<h2>Episode ${ep}</h2><p>New terrain generated. Press PLAY</p>`;
   document.getElementById('elog').innerHTML='';render();
 }
 
@@ -1188,7 +1188,7 @@ canvas.addEventListener('mousemove',e=>{
   const mc=ms?missionColor(ms.type):null;
 
   if(robot){
-    tt.innerHTML=`<b style="color:${rc}">${robot.role.icon} R${robot.id} — ${robot.role.name}</b><br>
+    tt.innerHTML=`<b style="color:${rc}">${robot.role.icon} R${robot.id}: ${robot.role.name}</b><br>
       Status: ${robot.status}<br>Terrain: ${terrain.name} (×${terrain.cost})<br>
       Tasks: ${robot.tasksCompleted} | Dist: ${robot.distTraveled.toFixed(0)}<br>
       G_t: ${robot.discountedReturn.toFixed(3)}<br>
@@ -1197,7 +1197,7 @@ canvas.addEventListener('mousemove',e=>{
     tt.style.display='block';
   } else if(ms){
     tt.innerHTML=`<b style="color:${mc}">${ms.type.icon} ${ms.type.name}</b><br>
-      Terrain: ${terrain.name}<br>Priority: ${'★'.repeat(ms.type.priority)||'—'}<br>
+      Terrain: ${terrain.name}<br>Priority: ${'★'.repeat(ms.type.priority)||'–'}<br>
       Requires: [${ms.type.requires.join(', ')}]<br>
       Progress: ${Math.round(ms.progress/ms.type.duration/10*100)}%<br>
       Assigned: [${ms.assignedTo.map(id=>'R'+id).join(', ')||'none'}]`;

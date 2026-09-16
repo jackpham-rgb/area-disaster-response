@@ -265,7 +265,7 @@
     <div class="hstat">EPISODE <span id="hdr-ep">0</span></div>
     <div class="hstat">STEP <span id="hdr-step">0</span></div>
     <div class="hstat">TASKS <span id="hdr-tasks">0/0</span></div>
-    <div class="hstat">FAIRNESS <span id="hdr-fair">—</span></div>
+    <div class="hstat">FAIRNESS <span id="hdr-fair">–</span></div>
     <div class="hstat" style="color:var(--muted);font-size:9px">NSF REU #2150390 · Pham · Thorpe · Topcu</div>
   </div>
 </header>
@@ -319,17 +319,17 @@
     <div id="metrics-grid">
       <div class="metric-cell">
         <div class="mc-label">GINI INDEX</div>
-        <div class="mc-val glow-cyan" id="m-gini">—</div>
+        <div class="mc-val glow-cyan" id="m-gini">–</div>
         <div class="mc-sub">↓ = fairer</div>
       </div>
       <div class="metric-cell">
         <div class="mc-label">VARIANCE</div>
-        <div class="mc-val glow-orange" id="m-var">—</div>
+        <div class="mc-val glow-orange" id="m-var">–</div>
         <div class="mc-sub">load spread</div>
       </div>
       <div class="metric-cell">
         <div class="mc-label">MAKESPAN</div>
-        <div class="mc-val glow-green" id="m-make">—</div>
+        <div class="mc-val glow-green" id="m-make">–</div>
         <div class="mc-sub">total steps</div>
       </div>
       <div class="metric-cell">
@@ -812,7 +812,7 @@ function endEpisode(){
   const g=gini(loads);
   episodeHistory.push({ep:episode, gini:g, makespan:step, collabs:collabCount});
 
-  logEvent('done',`🎯 EPISODE ${episode} COMPLETE — Makespan: ${step} | Gini: ${g.toFixed(4)} | Collabs: ${collabCount}`);
+  logEvent('done',`🎯 EPISODE ${episode} COMPLETE, Makespan: ${step} | Gini: ${g.toFixed(4)} | Collabs: ${collabCount}`);
   updateEpHistory();
 
   document.getElementById('overlay').style.display='flex';
@@ -974,7 +974,7 @@ function updateRoster(){
       <div class="rc-top" style="padding-left:6px">
         <span class="rc-icon">${r.role.icon}</span>
         <div>
-          <div class="rc-name" style="color:${r.color}">R${r.id} — ${r.role.name}</div>
+          <div class="rc-name" style="color:${r.color}">R${r.id}: ${r.role.name}</div>
           <div class="rc-role">${r.role.desc}</div>
         </div>
         <span class="rc-status ${colorMap[r.status]||'status-idle'}">${r.status.toUpperCase()}</span>
@@ -1258,7 +1258,7 @@ function newEpisode(){
   document.getElementById('ep-fill').style.width='0%';
   buildWorld(episode*100+42);
   document.getElementById('overlay').style.display='flex';
-  document.getElementById('overlay').innerHTML=`<h2>EPISODE ${episode} LOADED</h2><p>New disaster scenario generated — Press PLAY</p>`;
+  document.getElementById('overlay').innerHTML=`<h2>EPISODE ${episode} LOADED</h2><p>New disaster scenario generated. Press PLAY</p>`;
   document.getElementById('event-log').innerHTML='';
   render();
 }
@@ -1314,7 +1314,7 @@ canvas.addEventListener('mousemove',e=>{
   const obs=obstacles.find(o=>o[0]===row&&o[1]===col);
 
   if(robot){
-    tt.innerHTML=`<b style="color:${robot.color}">${robot.role.icon} R${robot.id} — ${robot.role.name}</b><br>
+    tt.innerHTML=`<b style="color:${robot.color}">${robot.role.icon} R${robot.id}: ${robot.role.name}</b><br>
       Status: ${robot.status}<br>
       Tasks done: ${robot.tasksCompleted}<br>
       Distance: ${robot.distTraveled}<br>
@@ -1324,7 +1324,7 @@ canvas.addEventListener('mousemove',e=>{
   } else if(ms){
     const pct=Math.round(ms.progress/ms.type.duration/10*100);
     tt.innerHTML=`<b style="color:${ms.type.color}">${ms.type.icon} ${ms.type.name}</b><br>
-      Priority: ${'★'.repeat(ms.type.priority)||'—'}<br>
+      Priority: ${'★'.repeat(ms.type.priority)||'–'}<br>
       Requires: ${ms.type.requires.join(', ')}<br>
       Progress: ${pct}%<br>
       Assigned: ${ms.assignedTo.map(id=>'R'+id).join(', ')||'none'}`;

@@ -17,7 +17,7 @@ The fairness reward function at the heart of it:
 
 $$r_t^i = \frac{\varepsilon + \left|e_t^i / \bar{e}_t - 1\right|}{\bar{e}_t}$$
 
-Where $e_t^i$ is an agent's performance relative to the average $\bar{e}_t$ — basically nudging agents toward equal contribution over time.
+Where $e_t^i$ is an agent's performance relative to the average $\bar{e}_t$. This basically nudges agents toward equal contribution over time.
 
 ---
 
@@ -39,7 +39,7 @@ Or clone the repo and open either HTML file directly in your browser, no setup n
 
 Even though this project lives in the world of reinforcement learning and multi-agent systems, since 2024 I've actually shifted my focus toward pure electrical engineering, specifically integrated circuits and signals. That's where my heart is these days, and that's the path I'm committed to going forward.
 
-That said, I'm glad this work exists. The problem of fairness in autonomous systems is genuinely important, and I think there's a lot of promise in applying these ideas to real-world robotics down the road, smarter coordination for drones, warehouse automation, disaster response at scale. I hope someone picks it up and runs with it.
+That said, I'm glad this work exists. The problem of fairness in autonomous systems is genuinely important, and I think there's a lot of promise in applying these ideas to real-world robotics down the road: smarter coordination for drones, warehouse automation, and disaster response at scale. I hope someone picks it up and runs with it.
 
 ---
 
@@ -57,7 +57,7 @@ This work was supported by the NSF REU Site: CI Research for Social Change, Awar
 |---|---|
 | `simulation.html` | Interactive multi-agent simulation (open in browser) |
 | `simulation_v2.html` | Interactive multi-agent simulation (2nd version) |
-| `visualizations.html` | Research data visualizations — all 5 figures with charts |
+| `visualizations.html` | Research data visualizations (all 5 figures with charts) |
 | `disaster_response_sim.py` | Core simulation engine (Python) |
 | `disaster_response.ipynb` | Research notebook with theory, figures, and experiments |
 | `REU paper.pdf` | Original REU paper (PDF) |

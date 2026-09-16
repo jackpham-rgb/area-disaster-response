@@ -192,7 +192,7 @@ class DisasterEnv:
         r_t^i = (ε + |e_t^i / ē_t - 1|) / ē_t
 
         performances : list of e_t^i for all agents
-                       (inverse distance to assigned task — lower dist = better perf)
+                       (inverse distance to assigned task: lower dist = better perf)
         """
         e_i   = performances[agent_id]
         e_bar = np.mean(performances) if np.mean(performances) != 0 else self.epsilon
@@ -318,7 +318,7 @@ def lp_task_allocation(env: DisasterEnv) -> Dict[int, int]:
             A_eq[j, i * n_t + j] = 1.0
     b_eq = np.ones(n_t)
 
-    # Inequality constraints: fairness — max tasks per agent
+    # Inequality constraints: fairness, max tasks per agent
     max_tasks = int(np.ceil(n_t / n_a)) + 1
     A_ub = np.zeros((n_a, n_a * n_t))
     for i in range(n_a):
@@ -352,7 +352,7 @@ def lp_task_allocation(env: DisasterEnv) -> Dict[int, int]:
 def greedy_task_allocation(env: DisasterEnv) -> Dict[int, List[int]]:
     """
     Greedy: assign each task to the nearest available agent.
-    No fairness consideration — used as baseline comparison.
+    No fairness consideration; used as baseline comparison.
     """
     assignment: Dict[int, List[int]] = {a.id: [] for a in env.agents}
     tasks = [t for t in env.tasks if not t.completed]
@@ -486,7 +486,7 @@ def cbs(env: DisasterEnv,
 
         conflict = detect_conflicts(node.paths)
         if conflict is None:
-            # No conflicts — solution found
+            # No conflicts, solution found
             if node.cost < best_cost:
                 best_cost  = node.cost
                 best_paths = node.paths
@@ -704,7 +704,7 @@ def _collect_metrics(env: DisasterEnv,
 
 
 def _gini(values: List) -> float:
-    """Gini coefficient — 0 = perfect equality, 1 = max inequality."""
+    """Gini coefficient: 0 = perfect equality, 1 = max inequality."""
     arr = np.array(values, dtype=float)
     if arr.sum() == 0:
         return 0.0
@@ -764,7 +764,7 @@ def run_experiment(algorithm: str = 'LP_CBS',
 # ─────────────────────────────────────────────────────────────────────────────
 
 def plot_grid(env: DisasterEnv, paths: Dict[int, List] = None,
-              title: str = "Grid World — Agents Navigating to Tasks",
+              title: str = "Grid World: Agents Navigating to Tasks",
               ax: plt.Axes = None):
     """Visualize grid world with agents, tasks, obstacles and paths."""
     if ax is None:
