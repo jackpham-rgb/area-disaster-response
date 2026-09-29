@@ -299,11 +299,11 @@ canvas.mini { width:100%; height:72px; display:block; }
       </div>
     </div>
     <div id="ctrl">
-      <button class="cbtn pri" id="bplay">▶ PLAY</button>
-      <button class="cbtn" id="bstep">⏭ STEP</button>
-      <button class="cbtn" id="bpause" style="display:none">⏸ PAUSE</button>
-      <button class="cbtn dng" id="breset">↺ RESET</button>
-      <button class="cbtn" id="bnew">⊕ NEW EP</button>
+      <button class="cbtn pri" id="bplay">PLAY</button>
+      <button class="cbtn" id="bstep">STEP</button>
+      <button class="cbtn" id="bpause" style="display:none">PAUSE</button>
+      <button class="cbtn dng" id="breset">RESET</button>
+      <button class="cbtn" id="bnew">NEW EP</button>
       <div class="ep-inf">
         <div class="ep-l">EPISODE</div>
         <div class="ep-v" id="cep">1</div>
@@ -428,19 +428,19 @@ function terrainColor(t, isDark) {
 
 // ── ROLES ────────────────────────────────────────────────
 const ROLES = [
-  {name:'Scout',    icon:'🔍', color:'#4fc3f7', lcolor:'#0277bd', desc:'Recon & detection',  cap:['detect']},
-  {name:'Medic',    icon:'🏥', color:'#ff7043', lcolor:'#bf360c', desc:'Triage & care',       cap:['heal','extract']},
-  {name:'Engineer', icon:'⚙️',  color:'#ffd740', lcolor:'#e65100', desc:'Obstacle clearing',  cap:['clear','build']},
-  {name:'Carrier',  icon:'🚚', color:'#69f0ae', lcolor:'#1b5e20', desc:'Transport & rescue',  cap:['carry','extract']},
-  {name:'FireBot',  icon:'🔥', color:'#ff5252', lcolor:'#b71c1c', desc:'Fire suppression',    cap:['suppress','cool']},
+  {name:'Scout',    icon:'S', color:'#4fc3f7', lcolor:'#0277bd', desc:'Recon & detection',  cap:['detect']},
+  {name:'Medic',    icon:'M', color:'#ff7043', lcolor:'#bf360c', desc:'Triage & care',       cap:['heal','extract']},
+  {name:'Engineer', icon:'E',  color:'#ffd740', lcolor:'#e65100', desc:'Obstacle clearing',  cap:['clear','build']},
+  {name:'Carrier',  icon:'C', color:'#69f0ae', lcolor:'#1b5e20', desc:'Transport & rescue',  cap:['carry','extract']},
+  {name:'FireBot',  icon:'F', color:'#ff5252', lcolor:'#b71c1c', desc:'Fire suppression',    cap:['suppress','cool']},
 ];
 
 const MISSIONS_T = [
-  {name:'Survivor',   icon:'🧑', color:'#ff7043', lcolor:'#bf360c', requires:['detect','extract','heal'], priority:3, duration:10},
-  {name:'Fire Source',icon:'🔥', color:'#ff5252', lcolor:'#b71c1c', requires:['suppress'],                priority:2, duration:7},
-  {name:'Debris',     icon:'🪨', color:'#90a4ae', lcolor:'#455a64', requires:['clear'],                   priority:1, duration:6},
-  {name:'Flood Zone', icon:'💧', color:'#4fc3f7', lcolor:'#0277bd', requires:['carry','extract'],          priority:2, duration:8},
-  {name:'Recon',      icon:'📡', color:'#ce93d8', lcolor:'#6a1b9a', requires:['detect'],                   priority:0, duration:4},
+  {name:'Survivor',   icon:'V', color:'#ff7043', lcolor:'#bf360c', requires:['detect','extract','heal'], priority:3, duration:10},
+  {name:'Fire Source',icon:'F', color:'#ff5252', lcolor:'#b71c1c', requires:['suppress'],                priority:2, duration:7},
+  {name:'Debris',     icon:'D', color:'#90a4ae', lcolor:'#455a64', requires:['clear'],                   priority:1, duration:6},
+  {name:'Flood Zone', icon:'W', color:'#4fc3f7', lcolor:'#0277bd', requires:['carry','extract'],          priority:2, duration:8},
+  {name:'Recon',      icon:'R', color:'#ce93d8', lcolor:'#6a1b9a', requires:['detect'],                   priority:0, duration:4},
 ];
 
 const GAMMA   = 0.95;
@@ -663,6 +663,7 @@ function buildWorld(seed){
   document.getElementById('htasks').textContent=`0/${missions.length}`;
   document.getElementById('hstate').textContent=stateSize().toLocaleString();
   document.getElementById('cep').textContent=ep;
+  document.getElementById('hep').textContent=ep;
   log('info',`World built, seed ${seed} | hex ${COLS}×${ROWS} | |S|=${stateSize().toLocaleString()}`);
 }
 
@@ -742,7 +743,7 @@ function mdpStep(){
       if(ms.progress>=ms.type.duration*10){
         ms.status='done';r.tasksCompleted++;r.status='idle';
         r.currentMission=null;r.missionQueue.shift();
-        log('done',`✓ R${r.id} completed ${ms.type.icon}${ms.type.name}${helpers.length?` [+${helpers.length} collab]`:''}`);
+        log('done',`✓ R${r.id} completed ${ms.type.icon} ${ms.type.name}${helpers.length?` [+${helpers.length} collab]`:''}`);
         if(r.missionQueue.length){
           r.path=astar(r,r.col,r.row,r.missionQueue[0].col,r.missionQueue[0].row);
           r.pathIdx=0;r.status='moving';
@@ -761,7 +762,7 @@ function mdpStep(){
             ri.currentMission.type.requires.some(x=>rj.role.cap.includes(x));
           if(sameOrRelated&&ri.collaborating!==rj.id){
             ri.collaborating=rj.id;rj.collaborating=ri.id;collabs++;
-            log('collab',`⟐ COLLAB: ${ri.role.icon}${ri.role.name} + ${rj.role.icon}${rj.role.name}`);
+            log('collab',`COLLAB: ${ri.role.icon} ${ri.role.name} + ${rj.role.icon} ${rj.role.name}`);
           }
         }
       } else {
@@ -784,7 +785,7 @@ function endEp(){
   const loads=robots.map(r=>r.tasksCompleted);
   const g=gini(loads);
   epHistory.push({ep,gini:g,makespan:step,collabs});
-  log('done',`▣ EP ${ep} DONE, steps:${step} gini:${g.toFixed(4)} collabs:${collabs}`);
+  log('done',`EP ${ep} DONE, steps:${step} gini:${g.toFixed(4)} collabs:${collabs}`);
   updateEpHistory();
   const ov=document.getElementById('overlay');
   ov.style.display='flex';
@@ -892,7 +893,7 @@ function render(){
     }
 
     // Icon
-    ctx.font=`${HEX_SIZE*0.55}px serif`;
+    ctx.font=`bold ${HEX_SIZE*0.55}px 'Share Tech Mono',monospace`;
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(ms.type.icon,cx,cy-1);
 
@@ -910,7 +911,7 @@ function render(){
     ctx.globalAlpha=0.22;
     drawHex(ctx,cx,cy,HEX_SIZE*0.6,isDark?'#69f0ae22':'#2e7d3222',isDark?'#69f0ae':'#2e7d32',1);
     ctx.fillStyle=isDark?'#69f0ae':'#2e7d32';
-    ctx.font=`${HEX_SIZE*0.5}px serif`;
+    ctx.font=`bold ${HEX_SIZE*0.5}px 'Share Tech Mono',monospace`;
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText('✓',cx,cy);
     ctx.globalAlpha=1;
@@ -949,7 +950,7 @@ function render(){
       rc,1.8);
 
     // Icon
-    ctx.font=`${sz*1.1}px serif`;
+    ctx.font=`bold ${sz*1.1}px 'Share Tech Mono',monospace`;
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(r.role.icon,cx,cy);
 
@@ -969,7 +970,7 @@ function render(){
     }
     if(r.collaborating!==null){
       ctx.fillStyle=isDark?'#ce93d8':'#6a1b9a';
-      ctx.font='11px serif';ctx.fillText('⟐',cx+sz+2,cy-sz-2);
+      ctx.font="bold 11px 'Share Tech Mono',monospace";ctx.fillText('+',cx+sz+2,cy-sz-2);
     }
   });
 
@@ -1009,7 +1010,7 @@ function updateUI(){
         <div class="rc-n">Done <b>${r.tasksCompleted}</b></div>
         <div class="rc-n">Dist <b>${r.distTraveled.toFixed(0)}</b></div>
         <div class="rc-n">G_t <b>${r.discountedReturn.toFixed(2)}</b></div>
-        ${r.collaborating!==null?`<div class="rc-n" style="color:var(--purple)">⟐ R${r.collaborating}</div>`:''}
+        ${r.collaborating!==null?`<div class="rc-n" style="color:var(--purple)">+ R${r.collaborating}</div>`:''}
       </div>`;
     roster.appendChild(d);
   });
@@ -1212,9 +1213,12 @@ canvas.addEventListener('mouseleave',()=>document.getElementById('tip').style.di
 
 // ── ANIMATION + INIT ─────────────────────────────────────
 function animLoop(){render();requestAnimationFrame(animLoop);}
-resize();
+// buildWorld() must run before the first resize()/render(): resize() calls
+// render(), which reads hexGrid/robots/missions, and those are only
+// populated once buildWorld() runs. Calling resize() first threw on load
+// (hexGrid was still the empty array from its declaration).
 buildWorld(179);
-render();
+resize();
 animLoop();
 </script>
 </body>
