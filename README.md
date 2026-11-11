@@ -1,63 +1,55 @@
 # Fair and Efficient Task Allocation and Path Planning for Multi-Agent Systems in Disaster Response Using Linear Programming
 
-Back in the summer of 2024, I had the opportunity to participate in an NSF REU (Research Experience for Undergraduates) at the University of Texas at Austin, where I got to work alongside the Texas Advanced Computing Center (TACC) and Dr. Adam Thorpe on this project. It was one of the coolest experiences I've had, and I got a chance to do my first real research as an undergrad and actually see it through to a paper and poster presentation.
+My first research project: a team of robots in a disaster zone that splits up the work fairly and plans paths that never collide. Built during the 2024 NSF REU at the University of Texas at Austin with the Texas Advanced Computing Center (TACC). [Live simulation](https://jackpham-rgb.github.io/area-disaster-response/simulation_v2.html)
 
----
+## Goal
 
-## What's the goal here?
+Send a team of robots into a disaster zone to search, carry, clear debris and fight fires. Two things have to go right:
 
-The core idea is: when you send a team of robots into a disaster zone (think search and rescue, fire suppression, debris clearing), how do you assign tasks *fairly* and plan their paths *efficiently* so they don't crash into each other and no single robot gets overloaded?
+- **Fair split.** No single robot should end up doing most of the work while others sit idle.
+- **Safe paths.** Robots share the same narrow space, so their routes must never put two of them in the same place at the same time.
 
-We tackled this by combining three things:
-- **Linear Programming (LP)** to allocate tasks in a way that balances workload across all robots
-- **FE-MADDPG** (Fairness-Enhanced Multi-Agent Deep Deterministic Policy Gradient) to bake fairness directly into the reward signal each robot learns from
-- **CBS** (Conflict-Based Search) to find collision-free paths for all robots simultaneously
+## How it works
 
-The fairness reward function at the heart of it:
+I learned that each of these problems already has a name and a standard tool, so I combined three of them.
+
+- **Linear programming (LP).** Assigning tasks to robots can be written as "minimize total cost, subject to every task being covered and no robot taking too much." Problems in that form are called linear programs, and solvers handle them quickly. That is how tasks get allocated.
+- **FE-MADDPG.** Reinforcement learning trains agents by reward. MADDPG is a version for many agents learning together. The FE stands for fairness-enhanced: each robot's reward includes a penalty when its workload drifts from the team average.
+- **CBS (Conflict-Based Search).** Plan each robot's path on its own, check whether any two collide, and if they do, add a rule forbidding that spot at that time and replan only the robots involved. Repeat until there are no collisions.
+
+The fairness reward:
 
 $$r_t^i = \frac{\varepsilon + \left|e_t^i / \bar{e}_t - 1\right|}{\bar{e}_t}$$
 
-Where $e_t^i$ is an agent's performance relative to the average $\bar{e}_t$. This basically nudges agents toward equal contribution over time.
+Here $e_t^i$ is one robot's performance and $\bar{e}_t$ is the team average. The further a robot is from the average, the bigger the penalty, which nudges the team toward equal contribution.
 
----
+## Try it
 
-## Try the simulator
+- **[Simulation v2](https://jackpham-rgb.github.io/area-disaster-response/simulation_v2.html)**: hexagonal terrain with five robot roles (Scout, Medic, Engineer, Carrier, FireBot), mission types, live fairness metrics, and a switch between algorithms while it runs.
+- **[Simulation v1](https://jackpham-rgb.github.io/area-disaster-response/simulation.html)**: the first, square-grid version.
+- **[Data visualizations](https://jackpham-rgb.github.io/area-disaster-response/visualizations.html)**: the five figures from the research.
 
-I built an interactive simulation that lets you watch the robots collaborate in real time with different robot roles (Scout, Medic, Engineer, Carrier, FireBot), different mission types, live fairness metrics, and the ability to switch between algorithms on the fly.
+Each page also opens straight from a cloned copy of the repo in any browser.
 
- **[Launch the live simulation here](https://jackpham-rgb.github.io/area-disaster-response/simulation.html)**
-
- **[Launch the live simulation v2 here](https://jackpham-rgb.github.io/area-disaster-response/simulation_v2.html)**
-
- **[View research data visualizations](https://jackpham-rgb.github.io/area-disaster-response/visualizations.html)**
-
-Or clone the repo and open either HTML file directly in your browser, no setup needed.
-
----
-
-## A personal note
-
-Even though this project lives in the world of reinforcement learning and multi-agent systems, since 2024 I've actually shifted my focus toward pure electrical engineering, specifically integrated circuits and signals. That's where my heart is these days, and that's the path I'm committed to going forward.
-
-That said, I'm glad this work exists. The problem of fairness in autonomous systems is genuinely important, and I think there's a lot of promise in applying these ideas to real-world robotics down the road: smarter coordination for drones, warehouse automation, and disaster response at scale. I hope someone picks it up and runs with it.
-
----
-
-## Thank you
-
-To everyone I met through the REU program, Dr. Adam Thorpe, Dr. Ufuk Topcu, Dr. Rosalia Gomez, my friends at TACC and REU cohort, thank you! That summer shaped how I think about research and problem-solving in ways I still carry with me.
- 
-This work was supported by the NSF REU Site: CI Research for Social Change, Award #2150390.
-
----
+On the simulation pages, the Gini index measures how unevenly work is spread. 0 means perfectly equal. I watch it drop when switching from the greedy baseline to LP + FE-MADDPG.
 
 ## Files
 
-| File | Description |
+| File | What it is |
 |---|---|
-| `simulation.html` | Interactive multi-agent simulation (open in browser) |
-| `simulation_v2.html` | Interactive multi-agent simulation (2nd version) |
-| `visualizations.html` | Research data visualizations (all 5 figures with charts) |
-| `disaster_response_sim.py` | Core simulation engine (Python) |
-| `disaster_response.ipynb` | Research notebook with theory, figures, and experiments |
-| `REU paper.pdf` | Original REU paper (PDF) |
+| `simulation_v2.html` | Interactive hex-grid simulation |
+| `simulation.html` | Interactive square-grid simulation (first version) |
+| `visualizations.html` | Research figures with charts |
+| `disaster_response_sim.py` | The simulation engine in Python |
+| `disaster_response.ipynb` | Notebook with the theory, figures and experiments |
+| `REU paper.pdf` | The REU report |
+
+## Where it went next
+
+[drone-ugv-disaster-response](https://github.com/jackpham-rgb/drone-ugv-disaster-response) builds on this. It splits the team into drones that scout and ground robots that rescue, and trains the policies with deep reinforcement learning.
+
+## Thank you
+
+To everyone I met through the REU program: Dr. Adam Thorpe, Dr. Ufuk Topcu, Dr. Rosalia Gomez, my friends at TACC and my REU cohort. That summer shaped how I think about research and problem solving.
+
+This work was supported by the NSF REU Site: CI Research for Social Change, Award #2150390.
